@@ -5,6 +5,12 @@ node_modules/
 dist/
 out/
 
+# .NET / widget build output
+**/bin/
+**/obj/
+**/AppPackages/
+*.user
+
 # Local runtime data & logs
 *.log
 *.tmp

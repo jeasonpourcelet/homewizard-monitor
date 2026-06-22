@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  IgnorableNamespaces="uap uap3 rescap com">
+
+  <Identity Name="HomeWizardMonitor.Widget" Publisher="CN=HomeWizardMonitor" Version="1.0.0.0" />
+
+  <Properties>
+    <DisplayName>HomeWizard Monitor Widget</DisplayName>
+    <PublisherDisplayName>HomeWizard Monitor</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="x-generate" />
+  </Resources>
+
+  <Applications>
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
+      <uap:VisualElements
+        DisplayName="HomeWizard Monitor Widget"
+        Description="Widget HomeWizard : batterie, grille, solaire, gaz en direct."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png"
+        AppListEntry="none">
+      </uap:VisualElements>
+      <Extensions>
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer Executable="HomeWizardWidget.exe" Arguments="-RegisterProcessAsComServer" DisplayName="HomeWizard Widget Provider">
+              <com:Class Id="9C2D6E4A-1F3B-4D7C-A5E8-6B0C2D4F8A19" DisplayName="HomeWizard Widget Provider" />
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
+        <uap3:Extension Category="windows.appExtension">
+          <uap3:AppExtension Name="com.microsoft.windows.widgets" DisplayName="HomeWizard Monitor" Id="homewizard.monitor.widget" PublicFolder="Public">
+            <uap3:Properties>
+              <WidgetProvider>
+                <ProviderIcons>
+                  <Icon Path="ProviderAssets\Icon.png" />
+                </ProviderIcons>
+                <Activation>
+                  <CreateInstance ClassId="9C2D6E4A-1F3B-4D7C-A5E8-6B0C2D4F8A19" />
+                </Activation>
+                <Definitions>
+                  <Definition Id="HomeWizard_Overview"
+                    DisplayName="HomeWizard — Aperçu"
+                    Description="Batterie, grille, solaire et gaz en direct.">
+                    <Capabilities>
+                      <Capability><Size Name="small" /></Capability>
+                      <Capability><Size Name="medium" /></Capability>
+                    </Capabilities>
+                    <ThemeResources>
+                      <Icons>
+                        <Icon Path="ProviderAssets\Icon.png" />
+                      </Icons>
+                      <Screenshots>
+                        <Screenshot Path="ProviderAssets\Screenshot.png" DisplayAltText="Aperçu HomeWizard" />
+                      </Screenshots>
+                    </ThemeResources>
+                  </Definition>
+                </Definitions>
+              </WidgetProvider>
+            </uap3:Properties>
+          </uap3:AppExtension>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
