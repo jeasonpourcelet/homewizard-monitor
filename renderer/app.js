@@ -399,11 +399,44 @@ function switchView(name) {
   document.querySelectorAll('.nav-item').forEach((b) =>
     b.classList.toggle('active', b.dataset.view === name)
   );
-  ['overview', 'charts', 'devices'].forEach((v) => {
+  ['overview', 'charts', 'raw', 'devices'].forEach((v) => {
     $('view-' + v).hidden = v !== name;
   });
   if (name === 'charts') refreshChart();
+  if (name === 'raw') renderRaw();
   if (name === 'devices') populateTraySettings();
+}
+
+// --------------------------------------------------------------------------
+// Onglet « Données » : tous les champs bruts renvoyés par chaque appareil.
+// --------------------------------------------------------------------------
+function fmtRawVal(v) {
+  if (v === null) return '<span class="muted">null</span>';
+  if (typeof v === 'object') return `<code>${JSON.stringify(v)}</code>`;
+  return String(v);
+}
+
+function renderRaw() {
+  const el = $('raw-content');
+  if (!lastDevices.length) {
+    el.innerHTML = `<p class="muted">Aucun appareil suivi.</p>`;
+    return;
+  }
+  el.innerHTML = lastDevices
+    .map((d) => {
+      const head = `<div class="panel-head"><h2>${roleIcon(d.role)} ${d.label}</h2>
+        <span class="badge">${d.productType || ''} · ${d.ip}</span></div>`;
+      if (!d.online || !d.raw) {
+        return `<div class="panel">${head}<p class="muted small">${
+          d.needsPairing ? '🔗 Appairage requis pour lire les données.' : 'Hors ligne — ' + (d.errorMsg || 'injoignable')
+        }</p></div>`;
+      }
+      const rows = Object.entries(d.raw)
+        .map(([k, v]) => `<tr><td class="rk">${k}</td><td class="rv">${fmtRawVal(v)}</td></tr>`)
+        .join('');
+      return `<div class="panel">${head}<table class="raw-table">${rows}</table></div>`;
+    })
+    .join('');
 }
 
 // --------------------------------------------------------------------------
@@ -422,6 +455,7 @@ async function init() {
     renderCards(s);
     updateHeader(s);
     if (currentView === 'charts') refreshChart(); // courbe en direct
+    if (currentView === 'raw') renderRaw();
   });
 
   // Onglets latéraux.

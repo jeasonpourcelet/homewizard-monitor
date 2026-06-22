@@ -17,6 +17,7 @@
         <nav class="nav">
           <button class="nav-item active" data-view="overview"><span>📊</span> Aperçu</button>
           <button class="nav-item" data-view="charts"><span>📈</span> Graphiques</button>
+          <button class="nav-item" data-view="raw"><span>🧬</span> Données</button>
           <button class="nav-item" data-view="devices"><span>🔌</span> Appareils</button>
         </nav>
         <div class="sidebar-foot">
@@ -46,6 +47,15 @@
           <p class="muted small">
             Mesure en temps réel de l'appareil sélectionné (les ~6 dernières minutes).
           </p>
+        </section>
+
+        <!-- ===== Données brutes ===== -->
+        <section id="view-raw" class="view" hidden>
+          <header class="view-head">
+            <h1>Données brutes de l'API</h1>
+            <span class="muted small">Tous les champs renvoyés par chaque appareil HomeWizard</span>
+          </header>
+          <div id="raw-content" class="raw-grid"></div>
         </section>
 
         <!-- ===== Appareils ===== -->

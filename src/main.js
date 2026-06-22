@@ -58,8 +58,11 @@ async function pollOnce() {
         flowLpm: m.flowLpm,
         gasM3: m.gasM3,
         switchState: m.switchState,
+        mode: m.mode,
+        batteryCount: m.batteryCount,
         day: totals.day,
         month: totals.month,
+        raw: m.raw, // réponse API brute, pour l'onglet « Données »
       });
     } catch (e) {
       entry.errorMsg = e.message;

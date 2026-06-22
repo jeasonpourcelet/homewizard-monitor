@@ -169,6 +169,18 @@ h3 { font-size: 12px; margin: 0 0 10px; color: var(--muted); text-transform: upp
 }
 .chart-card canvas { max-height: 100%; }
 
+/* ---------- Données brutes ---------- */
+.raw-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 14px; overflow-y: auto; padding-right: 4px; align-content: start;
+}
+.raw-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.raw-table td { padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.raw-table .rk { color: var(--muted); white-space: nowrap; font-family: Consolas, monospace; }
+.raw-table .rv { text-align: right; font-variant-numeric: tabular-nums; word-break: break-word; }
+.raw-table .rv code { font-size: 11px; color: var(--accent); }
+.raw-table tr:last-child td { border-bottom: none; }
+
 /* ---------- Appareils ---------- */
 .devices-cols { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; overflow-y: auto; padding-right: 4px; align-content: start; }
 .col-main, .col-side { display: flex; flex-direction: column; gap: 16px; }
