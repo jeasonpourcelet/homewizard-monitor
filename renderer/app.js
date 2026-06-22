@@ -68,7 +68,23 @@ function renderCard(d) {
   if (d.kind === 'gas') return cardGas(d);
   if (d.kind === 'water') return cardWater(d);
   if (d.kind === 'battery') return cardBattery(d);
+  if (d.kind === 'batteries') return cardBatteries(d);
   return cardEnergy(d);
+}
+
+function cardBatteries(d) {
+  const p = fmtPower(d.powerW);
+  const charging = d.powerW > 0;
+  const modes = { zero: 'Zéro injection', standby: 'Veille', to_full: 'Charge complète', predictive: 'Intelligent' };
+  return `<div class="card">
+    ${cardHead(d, d.batteryCount ? ' · ' + d.batteryCount + ' module(s)' : '')}
+    <div class="power ${charging ? 'export' : d.powerW < 0 ? 'import' : ''}">${p.val}
+      <small>${p.unit} ${d.powerW === 0 ? 'au repos' : charging ? 'en charge' : 'en décharge'}</small></div>
+    <div class="totals">
+      <div class="col"><div class="k">Mode</div><div class="v">${modes[d.mode] || d.mode || '—'}</div></div>
+      <div class="col"><div class="k">Niveau (%)</div><div class="v muted">via app HomeWizard</div></div>
+    </div>
+  </div>`;
 }
 
 function cardGas(d) {

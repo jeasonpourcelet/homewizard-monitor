@@ -39,6 +39,8 @@ const PRODUCT_TYPES = {
   'HWE-SKT': { label: 'Energy Socket', role: 'socket', kind: 'energy' },
   'HWE-KWH1': { label: 'kWh Meter (1-phase)', role: 'energy', kind: 'energy' },
   'HWE-KWH3': { label: 'kWh Meter (3-phase)', role: 'energy', kind: 'energy' },
+  'HWE-KWHA': { label: 'kWh Meter MID (1-phase)', role: 'energy', kind: 'energy' },
+  'HWE-KWHB': { label: 'kWh Meter MID (3-phase)', role: 'energy', kind: 'energy' },
   'HWE-WTR': { label: 'Watermeter', role: 'water', kind: 'water' },
   'HWE-BAT': { label: 'Plug-In Battery', role: 'battery', kind: 'battery' },
   'HWE-DSP': { label: 'Energy Display', role: 'display', kind: 'none' },
@@ -174,14 +176,31 @@ async function readBatteries(ip, token) {
 async function readDevice(dev) {
   const kind = dev.kind || describeProduct(dev.productType).kind;
 
-  // --- Battery (v2 / HTTPS) ---
+  // --- Battery control via the P1 / kWh meter (GET /api/batteries) ---
+  // Reliable path: the battery is controlled by the P1, whose pair button works.
+  // Gives charge/discharge power + mode, but NOT the state of charge.
+  if (kind === 'batteries') {
+    if (!dev.token) throw new Error('missing token (pairing required)');
+    const b = await readBatteries(dev.ip, dev.token);
+    return {
+      kind: 'batteries',
+      powerW: num(b.power_w),
+      mode: b.mode,
+      batteryCount: num(b.battery_count),
+      counters: {},
+      raw: b,
+    };
+  }
+
+  // --- v2 /api/measurement : battery (SoC), kWh meter, or recent P1 ---
   if (kind === 'battery' || dev.needsToken || dev.apiVersion === 'v2') {
     if (!dev.token) throw new Error('missing token (pairing required)');
     const m = await readMeasurementV2(dev.ip, dev.token);
     const importKwh = num(m.energy_import_kwh, 0);
     const exportKwh = num(m.energy_export_kwh, 0);
     return {
-      kind: 'battery',
+      // A battery reports state_of_charge_pct; everything else is energy.
+      kind: kind === 'battery' ? 'battery' : 'energy',
       powerW: num(m.power_w),
       importKwh,
       exportKwh,
