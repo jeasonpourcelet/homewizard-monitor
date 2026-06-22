@@ -34,25 +34,17 @@
           <div id="cards" class="cards-grid"></div>
         </section>
 
-        <!-- ===== Graphiques ===== -->
+        <!-- ===== Graphique (instantané) ===== -->
         <section id="view-charts" class="view" hidden>
           <header class="view-head">
-            <h1>Graphiques</h1>
+            <h1>Consommation en direct</h1>
             <select id="hist-device" class="select"></select>
           </header>
-          <div class="segmented" id="ranges">
-            <button data-range="live" class="seg">Instantané</button>
-            <button data-range="day" class="seg active">Jour</button>
-            <button data-range="week" class="seg">Semaine</button>
-            <button data-range="month" class="seg">Mois</button>
-            <button data-range="year" class="seg">Année</button>
-          </div>
           <div class="chart-card">
             <canvas id="chart"></canvas>
           </div>
           <p class="muted small">
-            L'historique se construit au fil du temps à partir des compteurs cumulés
-            (l'API locale ne garde pas le passé). « Instantané » trace la mesure en direct.
+            Mesure en temps réel de l'appareil sélectionné (les ~6 dernières minutes).
           </p>
         </section>
 

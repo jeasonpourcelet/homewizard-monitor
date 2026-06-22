@@ -13,7 +13,6 @@ let chart = null;
 let lastDevices = [];      // dernier snapshot live
 let selected = [];         // appareils suivis (config en cours d'édition)
 let chartSerial = null;
-let chartRange = 'day';    // live | day | week | month | year
 
 // --------------------------------------------------------------------------
 // Formatage
@@ -38,6 +37,17 @@ function roleIcon(role) {
   }[role] || '⚡';
 }
 
+// Couleurs de marque (alignées sur le CSS).
+const COL = {
+  import: '#ff6b5e',
+  export: '#3ddc84',
+  battery: '#34d399',
+  water: '#38bdf8',
+  gas: '#f59e42',
+  solar: '#f5c518',
+  neutral: '#8595a3',
+};
+
 // --------------------------------------------------------------------------
 // Dashboard live
 // --------------------------------------------------------------------------
@@ -45,24 +55,58 @@ function num(v, dp = 2) {
   return (v ?? 0).toFixed(dp);
 }
 
-function cardHead(d, badgeExtra = '') {
-  return `<div class="card-head">
-      <span class="card-title"><span class="dot"></span>${roleIcon(d.role)} ${d.label}</span>
-      <span class="badge">${d.ip}${badgeExtra}</span>
-    </div>`;
+// Mini-graphe en aire (sparkline) à partir des valeurs live.
+function sparklineSVG(values, color, { baseline0 = true } = {}) {
+  if (!values || values.length < 2) {
+    return `<div class="spark-empty">en attente de mesures…</div>`;
+  }
+  const w = 320, h = 120, pad = 6;
+  let min = Math.min(...values), max = Math.max(...values);
+  if (baseline0) { min = Math.min(min, 0); max = Math.max(max, 0); }
+  if (min === max) max = min + 1;
+  const range = max - min;
+  const X = (i) => pad + (i / (values.length - 1)) * (w - 2 * pad);
+  const Y = (v) => pad + (1 - (v - min) / range) * (h - 2 * pad);
+  const pts = values.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`);
+  const line = 'M' + pts.join(' L');
+  const area = `${line} L${X(values.length - 1).toFixed(1)},${h - pad} L${X(0).toFixed(1)},${h - pad} Z`;
+  const gid = 'sg' + color.replace('#', '');
+  return `<svg class="spark-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${color}" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="${color}" stop-opacity="0.03"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#${gid})"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
+
+// En-tête de carte façon HomeWizard : grande valeur + nom + info à droite.
+function cardTop(valueHtml, name, rightHtml = '') {
+  return `<div class="card-top">
+    <div class="card-main">
+      <div class="value">${valueHtml}</div>
+      <div class="dname">${name}</div>
+    </div>
+    <div class="card-right">${rightHtml}</div>
+  </div>`;
+}
+
+function valHtml(val, unit, cls = '') {
+  return `<span class="num ${cls}">${val}</span> <span class="unit">${unit}</span>`;
 }
 
 function renderCard(d) {
   if (!d.online) {
     const msg = d.needsPairing
-      ? `🔗 Appairage requis — onglet <b>Appareils</b> → « Appairer », puis pressez le bouton de l'appareil.`
+      ? `🔗 Appairage requis — onglet <b>Appareils</b> → « Appairer », puis bouton de l'appareil.`
       : `Hors ligne — ${d.errorMsg || 'injoignable'}`;
-    return `<div class="card">
-      <div class="card-head">
-        <span class="card-title"><span class="dot off"></span>${roleIcon(d.role)} ${d.label}</span>
-        <span class="badge">${d.ip}</span>
+    return `<div class="card off">
+      <div class="card-top">
+        <div class="card-main"><div class="dname"><span class="dot off"></span> ${d.label}</div></div>
+        <div class="card-right"><span class="ic">${roleIcon(d.role)}</span></div>
       </div>
-      <p class="muted small">${msg}</p>
+      <p class="card-msg muted small">${msg}</p>
     </div>`;
   }
   if (d.kind === 'gas') return cardGas(d);
@@ -72,104 +116,78 @@ function renderCard(d) {
   return cardEnergy(d);
 }
 
-function cardBatteries(d) {
+function powerStateLabel(w) {
+  return w === 0 ? 'au repos' : w > 0 ? 'en charge' : 'en décharge';
+}
+
+function cardEnergy(d) {
   const p = fmtPower(d.powerW);
-  const charging = d.powerW > 0;
-  const modes = { zero: 'Zéro injection', standby: 'Veille', to_full: 'Charge complète', predictive: 'Intelligent' };
+  const imp = d.powerW > 0;
+  const cls = imp ? 'c-import' : d.powerW < 0 ? 'c-export' : '';
+  const label = imp ? 'consommation' : d.powerW < 0 ? 'injection / production' : 'équilibre';
+  const color = imp ? COL.import : d.powerW < 0 ? COL.export : COL.neutral;
+  const right = d.switchState != null
+    ? `<span class="tag ${d.switchState ? 'ok' : 'warn'}">${d.switchState ? '⏻ on' : '○ off'}</span>`
+    : `<span class="ic">${roleIcon(d.role)}</span>`;
   return `<div class="card">
-    ${cardHead(d, d.batteryCount ? ' · ' + d.batteryCount + ' module(s)' : '')}
-    <div class="power ${charging ? 'export' : d.powerW < 0 ? 'import' : ''}">${p.val}
-      <small>${p.unit} ${d.powerW === 0 ? 'au repos' : charging ? 'en charge' : 'en décharge'}</small></div>
-    <div class="totals">
-      <div class="col"><div class="k">Mode</div><div class="v">${modes[d.mode] || d.mode || '—'}</div></div>
-      <div class="col"><div class="k">Niveau (%)</div><div class="v muted">via app HomeWizard</div></div>
+    <div class="card-top">
+      <div class="card-main"><div class="value">${valHtml(p.val, p.unit, cls)}</div>
+        <div class="dname">${d.label} <span class="muted">· ${label}</span></div></div>
+      <div class="card-right">${right}</div>
     </div>
+    <div class="spark">${sparklineSVG(d.spark, color)}</div>
+  </div>`;
+}
+
+function cardWater(d) {
+  const flow = d.flowLpm != null ? d.flowLpm : 0;
+  return `<div class="card">
+    <div class="card-top">
+      <div class="card-main"><div class="value">${valHtml(flow, 'L/min', 'c-water')}</div>
+        <div class="dname">${d.label} <span class="muted">· ${num(d.waterM3)} m³</span></div></div>
+      <div class="card-right"><span class="ic">💧</span></div>
+    </div>
+    <div class="spark">${sparklineSVG(d.spark, COL.water)}</div>
   </div>`;
 }
 
 function cardGas(d) {
   return `<div class="card">
-    ${cardHead(d)}
-    <div class="power">${num(d.gasM3, 3)} <small>m³ total</small></div>
-    <div class="totals">
-      <div class="col"><div class="k">Aujourd'hui</div><div class="v">${num(d.day?.gas, 3)} m³</div></div>
-      <div class="col"><div class="k">Ce mois</div><div class="v">${num(d.month?.gas, 2)} m³</div></div>
+    <div class="card-top">
+      <div class="card-main"><div class="value">${valHtml(num(d.gasM3, 2), 'm³', 'c-gas')}</div>
+        <div class="dname">${d.label}</div></div>
+      <div class="card-right"><span class="ic">🔥</span></div>
     </div>
-  </div>`;
-}
-
-function cardEnergy(d) {
-  const p = fmtPower(d.powerW);
-  const dir = d.powerW > 0 ? 'import' : d.powerW < 0 ? 'export' : '';
-  const dirLabel = d.powerW > 0 ? 'consommation' : d.powerW < 0 ? 'injection/production' : 'équilibre';
-  const sw = d.switchState != null
-    ? `<span class="tag-ok">${d.switchState ? '⏻ allumée' : '○ éteinte'}</span>` : '';
-  // Hide the inline gas line if the user tracks gas as its own dedicated card.
-  const hasGasCard = lastDevices.some((x) => x.kind === 'gas');
-  const gas = d.gasM3 != null && !hasGasCard
-    ? `<div class="subline">🔥 Gaz : ${num(d.gasM3, 2)} m³
-         <span class="muted">· auj. ${num(d.day?.gas, 2)} m³ · mois ${num(d.month?.gas, 1)} m³</span></div>` : '';
-  return `<div class="card">
-    ${cardHead(d)}
-    <div class="power ${dir}">${p.val} <small>${p.unit} ${dirLabel}</small> ${sw}</div>
-    <div class="totals">
-      <div class="col"><div class="k">Aujourd'hui</div>
-        <div class="v"><span class="up">↑${num(d.day?.import)}</span>
-        &nbsp;<span class="down">↓${num(d.day?.export)}</span> kWh</div></div>
-      <div class="col"><div class="k">Ce mois</div>
-        <div class="v"><span class="up">↑${num(d.month?.import, 1)}</span>
-        &nbsp;<span class="down">↓${num(d.month?.export, 1)}</span> kWh</div></div>
-    </div>
-    ${gas}
-  </div>`;
-}
-
-function cardWater(d) {
-  const flow = d.flowLpm != null ? `${d.flowLpm} <small>L/min</small>` : '— <small>L/min</small>';
-  return `<div class="card">
-    ${cardHead(d)}
-    <div class="power">${flow}</div>
-    <div class="totals">
-      <div class="col"><div class="k">Total</div><div class="v">${num(d.waterM3)} m³</div></div>
-      <div class="col"><div class="k">Aujourd'hui</div><div class="v">${num(d.day?.water, 3)} m³</div></div>
-      <div class="col"><div class="k">Ce mois</div><div class="v">${num(d.month?.water)} m³</div></div>
-    </div>
-  </div>`;
-}
-
-function gaugeSVG(pct, color) {
-  const r = 40, c = 2 * Math.PI * r;
-  const off = c * (1 - (pct ?? 0) / 100);
-  return `<div class="gauge">
-    <svg width="96" height="96" viewBox="0 0 96 96">
-      <circle cx="48" cy="48" r="${r}" fill="none" stroke="var(--line)" stroke-width="9"/>
-      <circle cx="48" cy="48" r="${r}" fill="none" stroke="${color}" stroke-width="9"
-        stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
-    </svg>
-    <div class="gauge-val">${pct != null ? pct + '%' : '—'}</div>
+    <p class="card-msg muted small">Index du compteur gaz (mise à jour ~horaire — pas de mesure instantanée).</p>
   </div>`;
 }
 
 function cardBattery(d) {
   const p = fmtPower(d.powerW);
   const soc = d.socPct != null ? Math.round(d.socPct) : null;
-  const charging = d.powerW > 0;
-  const stateLabel = d.powerW === 0 ? 'au repos' : charging ? 'en charge' : 'en décharge';
-  const color = soc == null ? 'var(--muted)' : soc <= 20 ? 'var(--import)' : 'var(--battery)';
-  return `<div class="card gauge-card">
-    ${gaugeSVG(soc, color)}
-    <div class="gauge-info">
-      <div class="card-title" style="margin-bottom:8px"><span class="dot"></span>🔋 ${d.label}</div>
-      <div class="power ${charging ? 'export' : d.powerW < 0 ? 'import' : ''}">${p.val}
-        <small>${p.unit} ${stateLabel}</small></div>
-      <div class="totals">
-        <div class="col"><div class="k">Chargé auj.</div>
-          <div class="v"><span class="down">${num(d.day?.import)}</span> kWh</div></div>
-        <div class="col"><div class="k">Fourni auj.</div>
-          <div class="v"><span class="up">${num(d.day?.export)}</span> kWh</div></div>
-      </div>
-      ${d.cycles != null ? `<div class="badge" style="margin-top:8px">${d.cycles} cycles</div>` : ''}
+  const right = soc != null
+    ? `<span class="soc-badge">${soc}%</span>`
+    : `<span class="ic">🔋</span>`;
+  return `<div class="card">
+    <div class="card-top">
+      <div class="card-main"><div class="value">${valHtml(p.val, p.unit + ' · ' + powerStateLabel(d.powerW), 'c-battery')}</div>
+        <div class="dname">${d.label}${d.cycles != null ? ` <span class="muted">· ${d.cycles} cycles</span>` : ''}</div></div>
+      <div class="card-right">${right}</div>
     </div>
+    <div class="spark">${sparklineSVG(d.spark, COL.battery)}</div>
+  </div>`;
+}
+
+function cardBatteries(d) {
+  const p = fmtPower(d.powerW);
+  const modes = { zero: 'Zéro injection', standby: 'Veille', to_full: 'Charge complète', predictive: 'Intelligent' };
+  return `<div class="card">
+    <div class="card-top">
+      <div class="card-main"><div class="value">${valHtml(p.val, p.unit + ' · ' + powerStateLabel(d.powerW), 'c-battery')}</div>
+        <div class="dname">${d.label}${d.batteryCount ? ` <span class="muted">· ${d.batteryCount} module(s)</span>` : ''}</div></div>
+      <div class="card-right"><span class="tag ok">${modes[d.mode] || d.mode || '—'}</span></div>
+    </div>
+    <div class="spark">${sparklineSVG(d.spark, COL.battery)}</div>
   </div>`;
 }
 
@@ -201,81 +219,43 @@ function updateHeader(snapshot) {
 }
 
 // --------------------------------------------------------------------------
-// Graphique historique — vues : live / jour / semaine / mois / année
+// Graphique « en direct » : courbe instantanée de l'appareil sélectionné.
 // --------------------------------------------------------------------------
-let chartType = null; // 'bar' | 'line' (recrée le chart si le type change)
-
-function setChart(type, labels, datasets) {
-  if (chart && chartType !== type) {
-    chart.destroy();
-    chart = null;
-  }
-  chartType = type;
-  if (!chart) {
-    const ctx = $('chart').getContext('2d');
-    chart = new Chart(ctx, {
-      type,
-      data: { labels, datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        plugins: { legend: { labels: { color: '#8595a3', boxWidth: 12 } } },
-        scales: {
-          x: { ticks: { color: '#8595a3', maxRotation: 0, autoSkip: true }, grid: { display: false } },
-          y: { ticks: { color: '#8595a3' }, grid: { color: '#25323d' } },
-        },
-      },
-    });
-  } else {
-    chart.data.labels = labels;
-    chart.data.datasets = datasets;
-    chart.update();
-  }
-}
-
-function barDatasets(kind, rows) {
-  if (kind === 'water')
-    return [{ label: 'Eau (m³)', data: rows.map((h) => h.water ?? 0), backgroundColor: '#38bdf8' }];
-  if (kind === 'gas')
-    return [{ label: 'Gaz (m³)', data: rows.map((h) => h.gas ?? 0), backgroundColor: '#fb7185' }];
-  const ds = [
-    { label: 'Import (kWh)', data: rows.map((h) => h.import ?? 0), backgroundColor: '#f59e0b' },
-    { label: 'Export (kWh)', data: rows.map((h) => h.export ?? 0), backgroundColor: '#34d399' },
-  ];
-  if (rows.some((h) => h.gas != null))
-    ds.push({ label: 'Gaz (m³)', data: rows.map((h) => h.gas ?? 0), backgroundColor: '#fb7185' });
-  return ds;
-}
-
 async function refreshChart() {
   if (!chartSerial) return;
   const dev = lastDevices.find((d) => d.serial === chartSerial);
   const kind = dev?.kind || 'energy';
+  const buf = await window.hwm.getLive(chartSerial);
+  const labels = buf.map((p) => {
+    const t = new Date(p.t);
+    return String(t.getMinutes()).padStart(2, '0') + ':' + String(t.getSeconds()).padStart(2, '0');
+  });
+  const unit = kind === 'battery' ? 'Charge / puissance' : kind === 'water' ? 'Débit (L/min)' : 'Puissance (W)';
+  const color = kind === 'battery' || kind === 'batteries' ? COL.battery : kind === 'water' ? COL.water : COL.import;
 
-  if (chartRange === 'live') {
-    const buf = await window.hwm.getLive(chartSerial);
-    const labels = buf.map((p) => {
-      const t = new Date(p.t);
-      return String(t.getMinutes()).padStart(2, '0') + ':' + String(t.getSeconds()).padStart(2, '0');
+  if (!chart) {
+    chart = new Chart($('chart').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#8595a3', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
+          y: { ticks: { color: '#8595a3' }, grid: { color: '#25323d' } },
+        },
+      },
     });
-    const unit = kind === 'battery' ? 'Charge (%)' : kind === 'water' ? 'Débit (L/min)' : 'Puissance (W)';
-    const color = kind === 'battery' ? '#34d399' : kind === 'water' ? '#38bdf8' : '#f59e0b';
-    setChart('line', labels, [
-      { label: unit, data: buf.map((p) => p.v), borderColor: color, backgroundColor: color,
-        fill: false, pointRadius: 0, tension: 0.25, borderWidth: 2 },
-    ]);
-    return;
   }
-
-  let rows;
-  if (chartRange === 'day') rows = await window.hwm.getHistory(chartSerial, 30);
-  else if (chartRange === 'week') rows = await window.hwm.getAggregated(chartSerial, 'week', 12);
-  else if (chartRange === 'month') rows = await window.hwm.getAggregated(chartSerial, 'month', 12);
-  else rows = await window.hwm.getAggregated(chartSerial, 'year', 5);
-
-  const labels = rows.map((h) => (chartRange === 'day' ? h.date.slice(5) : h.date));
-  setChart('bar', labels, barDatasets(kind, rows));
+  chart.data.labels = labels;
+  chart.data.datasets = [{
+    label: unit, data: buf.map((p) => p.v),
+    borderColor: color, backgroundColor: color + '33',
+    fill: true, pointRadius: 0, tension: 0.25, borderWidth: 2,
+  }];
+  chart.update();
 }
 
 // --------------------------------------------------------------------------
@@ -441,7 +421,7 @@ async function init() {
   window.hwm.onState((s) => {
     renderCards(s);
     updateHeader(s);
-    if (currentView === 'charts' && chartRange === 'live') refreshChart();
+    if (currentView === 'charts') refreshChart(); // courbe en direct
   });
 
   // Onglets latéraux.
@@ -460,23 +440,11 @@ async function init() {
     refreshChart();
   });
 
-  // Sélecteur de vue temporelle (Instantané / Jour / Semaine / Mois / Année).
-  $('ranges').querySelectorAll('.seg').forEach((b) =>
-    b.addEventListener('click', () => {
-      chartRange = b.dataset.range;
-      $('ranges').querySelectorAll('.seg').forEach((x) => x.classList.toggle('active', x === b));
-      refreshChart();
-    })
-  );
-
   // Widget barre des tâches.
   $('btn-tray-save').addEventListener('click', saveTraySettings);
 
   // Si aucun appareil suivi, ouvrir directement l'onglet Appareils.
   if (!selected.length) switchView('devices');
-
-  // Rafraîchit le graphique périodiquement (les totaux évoluent).
-  setInterval(() => { if (currentView === 'charts') refreshChart(); }, 30000);
 }
 
 // --------------------------------------------------------------------------

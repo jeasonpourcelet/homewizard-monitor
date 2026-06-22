@@ -69,13 +69,19 @@ async function pollOnce() {
   }
 
   lastSnapshot = snapshot;
-  if (win && !win.isDestroyed()) win.webContents.send('state-update', snapshot);
   try {
     recordLive(snapshot);
+  } catch (e) {
+    diag('recordLive error: ' + e.message);
+  }
+  // Attache la courbe live (valeurs récentes) à chaque appareil pour les sparklines.
+  for (const d of snapshot.devices) d.spark = (liveBuffers[d.serial] || []).map((p) => p.v);
+  if (win && !win.isDestroyed()) win.webContents.send('state-update', snapshot);
+  try {
     updateTrayTooltip(snapshot);
     updateTrayIcon(snapshot);
   } catch (e) {
-    diag('tray/live update error: ' + e.message);
+    diag('tray update error: ' + e.message);
   }
 }
 

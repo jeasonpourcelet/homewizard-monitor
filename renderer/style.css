@@ -80,8 +80,8 @@ h3 { font-size: 12px; margin: 0 0 10px; color: var(--muted); text-transform: upp
 /* ---------- Cartes (Aperçu) ---------- */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 14px;
   overflow-y: auto;
   padding-right: 4px;
   align-content: start;
@@ -90,7 +90,7 @@ h3 { font-size: 12px; margin: 0 0 10px; color: var(--muted); text-transform: upp
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: 16px;
   box-shadow: var(--shadow);
   display: flex; flex-direction: column;
 }
@@ -127,6 +127,30 @@ h3 { font-size: 12px; margin: 0 0 10px; color: var(--muted); text-transform: upp
 .tag.ok { background: rgba(52, 211, 153, 0.16); color: var(--battery); }
 .tag.warn { background: rgba(245, 158, 66, 0.16); color: var(--gas); }
 .tag.pair { background: rgba(56, 189, 248, 0.16); color: var(--water); }
+
+/* ---------- Cartes style HomeWizard (valeur + sparkline) ---------- */
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.card-main { min-width: 0; }
+.value { display: flex; align-items: baseline; gap: 7px; }
+.value .num { font-size: 29px; font-weight: 700; letter-spacing: -1px; line-height: 1; font-variant-numeric: tabular-nums; }
+.value .unit { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.dname { margin-top: 7px; font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dname .muted { font-weight: 400; }
+.card-right { flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+.ic { font-size: 20px; opacity: 0.9; }
+.soc-badge { font-size: 15px; font-weight: 700; color: var(--battery); background: rgba(52, 211, 153, 0.16); padding: 4px 11px; border-radius: 20px; }
+.card-msg { margin: 10px 0 0; }
+
+.c-import { color: var(--import); }
+.c-export { color: var(--export); }
+.c-battery { color: var(--battery); }
+.c-water { color: var(--water); }
+.c-gas { color: var(--gas); }
+.card.off .dname { color: var(--muted); }
+
+.spark { margin: 10px -4px -4px; height: 88px; }
+.spark-svg { width: 100%; height: 100%; display: block; }
+.spark-empty { height: 88px; display: grid; place-items: center; color: var(--muted); font-size: 12px; }
 
 /* ---------- Graphiques ---------- */
 .segmented {
