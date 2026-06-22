@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output (electron-builder) — contains absolute machine paths, never commit
+dist/
+out/
+
+# Local runtime data & logs
+*.log
+*.tmp
+hwm-diag.log
+
+# Generated icons are committed (small, reproducible via `npm run icons`),
+# but ignore any throwaway exports
+*.icns
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

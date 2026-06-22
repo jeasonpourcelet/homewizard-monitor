@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HomeWizard Monitor</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="logo">⚡</span>
+        <div>
+          <h1>HomeWizard Monitor</h1>
+          <p id="updated" class="muted">En attente…</p>
+        </div>
+      </div>
+      <button id="btn-settings" class="ghost" title="Configurer les appareils">⚙</button>
+    </header>
+
+    <main id="view-dashboard">
+      <section id="cards" class="cards"></section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Historique quotidien</h2>
+          <select id="hist-device" class="select"></select>
+        </div>
+        <canvas id="chart" height="180"></canvas>
+        <p class="muted small">
+          L'historique se construit jour après jour à partir des compteurs cumulés
+          des appareils (l'API locale ne stocke pas le passé).
+        </p>
+      </section>
+    </main>
+
+    <main id="view-settings" hidden>
+      <div class="panel-head">
+        <h2>Appareils</h2>
+        <button id="btn-back" class="ghost">← Retour</button>
+      </div>
+
+      <button id="btn-discover" class="primary">🔍 Découvrir sur le réseau</button>
+      <p id="discover-status" class="muted small"></p>
+
+      <div id="discovered" class="device-list"></div>
+
+      <div class="manual">
+        <h3>Ajouter par adresse IP</h3>
+        <div class="row">
+          <input id="manual-ip" class="input" placeholder="192.168.1.42" />
+          <button id="btn-add-ip" class="secondary">Tester &amp; ajouter</button>
+        </div>
+        <p id="manual-status" class="muted small"></p>
+      </div>
+
+      <div class="panel">
+        <h3>Appareils suivis</h3>
+        <div id="selected-list" class="device-list"></div>
+      </div>
+
+      <button id="btn-save" class="primary wide">💾 Enregistrer</button>
+    </main>
+
+    <script src="../node_modules/chart.js/dist/chart.umd.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

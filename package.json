@@ -1,0 +1,68 @@
+{
+  "name": "homewizard-monitor",
+  "version": "0.1.0",
+  "description": "Windows tray app + dashboard for HomeWizard Energy: real-time power (grid / solar / battery / sockets), water & gas, with locally-built day/month history. 100% local API, no cloud.",
+  "main": "src/main.js",
+  "author": "Jeason",
+  "license": "MIT",
+  "homepage": "https://github.com/jeasonpourcelet/homewizard-monitor#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeasonpourcelet/homewizard-monitor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jeasonpourcelet/homewizard-monitor/issues"
+  },
+  "keywords": [
+    "homewizard",
+    "energy",
+    "p1-meter",
+    "solar",
+    "battery",
+    "electron",
+    "tray",
+    "dashboard",
+    "windows"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "icons": "node scripts/generate-icon.js",
+    "build": "electron-builder --win portable nsis"
+  },
+  "dependencies": {
+    "bonjour-service": "^1.3.0",
+    "chart.js": "^4.4.7"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "io.github.homewizard-monitor",
+    "productName": "HomeWizard Monitor",
+    "files": [
+      "src/**/*",
+      "renderer/**/*",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "icon": "assets/icon.png",
+      "target": [
+        { "target": "portable", "arch": ["x64"] },
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "portable": {
+      "artifactName": "HomeWizard-Monitor-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "HomeWizard Monitor"
+    }
+  }
+}

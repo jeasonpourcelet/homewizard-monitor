@@ -1,0 +1,142 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a2129;
+  --panel-2: #222b35;
+  --line: #2c3744;
+  --txt: #e6edf3;
+  --muted: #8a97a6;
+  --accent: #2dd4bf;
+  --grid: #f59e0b;
+  --solar: #fbbf24;
+  --battery: #34d399;
+  --danger: #f87171;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  font-size: 14px;
+  -webkit-user-select: none;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo {
+  font-size: 22px;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  border-radius: 10px;
+}
+h1 { font-size: 15px; margin: 0; font-weight: 600; }
+h2 { font-size: 14px; margin: 0; }
+h3 { font-size: 13px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+.muted { color: var(--muted); margin: 2px 0 0; }
+.small { font-size: 12px; }
+
+main { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+/* Cartes live */
+.cards { display: flex; flex-direction: column; gap: 12px; }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.card-title { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--battery); }
+.dot.off { background: var(--danger); }
+.badge { font-size: 11px; color: var(--muted); }
+
+.power {
+  font-size: 30px; font-weight: 700; letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+.power small { font-size: 14px; color: var(--muted); font-weight: 500; }
+.power.import { color: var(--grid); }
+.power.export { color: var(--battery); }
+
+.totals { display: flex; gap: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.totals .col { flex: 1; }
+.totals .k { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+.totals .v { font-variant-numeric: tabular-nums; }
+.up { color: var(--grid); }
+.down { color: var(--battery); }
+
+/* Panels */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+
+/* Boutons & champs */
+button { font-family: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); }
+.ghost { background: transparent; color: var(--txt); padding: 6px 10px; font-size: 16px; }
+.ghost:hover { background: var(--panel-2); }
+.primary { background: var(--accent); color: #06302b; border: none; padding: 10px 14px; font-weight: 600; }
+.primary:hover { filter: brightness(1.08); }
+.secondary { background: var(--panel-2); color: var(--txt); padding: 9px 12px; }
+.secondary:hover { background: var(--line); }
+.wide { width: 100%; }
+
+.input, .select {
+  background: var(--panel-2); color: var(--txt);
+  border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px;
+  font-family: inherit; font-size: 13px;
+}
+.row { display: flex; gap: 8px; }
+.row .input { flex: 1; }
+
+/* Listes d'appareils */
+.device-list { display: flex; flex-direction: column; gap: 8px; }
+.dev {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px;
+}
+.dev input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+.dev .meta { flex: 1; }
+.dev .meta .name { font-weight: 600; }
+.dev .meta .sub { font-size: 12px; color: var(--muted); }
+.dev .rm { background: transparent; border: none; color: var(--danger); font-size: 16px; }
+
+.manual { display: flex; flex-direction: column; gap: 6px; }
+
+/* Jauge batterie */
+.soc { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.soc-bar { flex: 1; height: 14px; background: var(--panel-2); border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.soc-fill { height: 100%; background: linear-gradient(90deg, #34d399, #10b981); transition: width .4s ease; }
+.soc-val { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 42px; text-align: right; }
+
+/* Sous-ligne (gaz dans la carte P1) */
+.subline { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; }
+.subline .muted { font-size: 12px; }
+.power .tag-ok { font-size: 12px; margin-left: 8px; vertical-align: middle; }
+
+/* Appairage */
+.dev-wrap { display: flex; flex-direction: column; gap: 4px; }
+.pair { display: flex; align-items: center; gap: 8px; padding: 0 4px 4px; }
+.pair-btn { padding: 6px 10px; font-size: 12px; }
+.tag-ok { font-size: 12px; color: var(--battery); }
