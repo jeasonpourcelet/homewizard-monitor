@@ -163,7 +163,7 @@ function cardGas(d) {
 }
 
 function cardBattery(d) {
-  const p = fmtPower(d.powerW);
+  const p = fmtPower(Math.abs(d.powerW ?? 0));
   const soc = d.socPct != null ? Math.round(d.socPct) : null;
   const right = soc != null
     ? `<span class="soc-badge">${soc}%</span>`
@@ -179,7 +179,7 @@ function cardBattery(d) {
 }
 
 function cardBatteries(d) {
-  const p = fmtPower(d.powerW);
+  const p = fmtPower(Math.abs(d.powerW ?? 0));
   const modes = { zero: 'Zéro injection', standby: 'Veille', to_full: 'Charge complète', predictive: 'Intelligent' };
   return `<div class="card">
     <div class="card-top">

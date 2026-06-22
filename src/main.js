@@ -80,9 +80,26 @@ async function pollOnce() {
   try {
     updateTrayTooltip(snapshot);
     updateTrayIcon(snapshot);
+    writeLatest(snapshot);
   } catch (e) {
     diag('tray update error: ' + e.message);
   }
+}
+
+// Exporte les valeurs courantes pour un consommateur externe (widget Windows, etc.).
+function writeLatest(snapshot) {
+  const out = {
+    updatedAt: snapshot.updatedAt,
+    devices: snapshot.devices.map((d) => ({
+      serial: d.serial, label: d.label, kind: d.kind, role: d.role, online: !!d.online,
+      powerW: d.powerW ?? null, socPct: d.socPct ?? null, mode: d.mode ?? null,
+      waterM3: d.waterM3 ?? null, flowLpm: d.flowLpm ?? null, gasM3: d.gasM3 ?? null,
+    })),
+  };
+  const tmp = path.join(app.getPath('userData'), 'latest.json.tmp');
+  const dst = path.join(app.getPath('userData'), 'latest.json');
+  fs.writeFileSync(tmp, JSON.stringify(out));
+  fs.renameSync(tmp, dst);
 }
 
 // ---------------------------------------------------------------------------
