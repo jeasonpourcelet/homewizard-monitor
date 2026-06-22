@@ -133,6 +133,60 @@ class Store {
     };
   }
 
+  static isoWeekKey(d) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = (date.getUTCDay() + 6) % 7; // Monday = 0
+    date.setUTCDate(date.getUTCDate() - dayNum + 3); // Thursday of this ISO week
+    const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+    const week = 1 + Math.round((date - firstThursday) / 604800000);
+    return date.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
+  }
+
+  static bucketKey(d, gran) {
+    if (gran === 'week') return Store.isoWeekKey(d);
+    if (gran === 'month') return Store.monthKey(d);
+    if (gran === 'year') return String(d.getFullYear());
+    return Store.dayKey(d);
+  }
+
+  static lastBucketKeys(gran, n) {
+    const keys = [];
+    const today = new Date();
+    for (let i = n - 1; i >= 0; i--) {
+      let d;
+      if (gran === 'week') {
+        d = new Date(today);
+        d.setDate(d.getDate() - i * 7);
+      } else if (gran === 'month') {
+        d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      } else if (gran === 'year') {
+        d = new Date(today.getFullYear() - i, 0, 1);
+      } else {
+        d = new Date(today);
+        d.setDate(d.getDate() - i);
+      }
+      keys.push(Store.bucketKey(d, gran));
+    }
+    return keys;
+  }
+
+  /**
+   * Aggregates the daily history into the last `buckets` periods of the given
+   * granularity ('day' | 'week' | 'month' | 'year'). Each entry sums the daily
+   * counter deltas falling in that period.
+   */
+  getAggregatedHistory(serial, granularity = 'month', buckets = 12) {
+    if (granularity === 'day') return this.getDailyHistory(serial, buckets);
+    const hist = this.history[serial] || {};
+    const sums = {};
+    for (const [dateStr, counters] of Object.entries(hist)) {
+      const key = Store.bucketKey(new Date(dateStr + 'T00:00:00'), granularity);
+      if (!sums[key]) sums[key] = {};
+      for (const [k, v] of Object.entries(counters)) sums[key][k] = round3((sums[key][k] || 0) + v);
+    }
+    return Store.lastBucketKeys(granularity, buckets).map((key) => ({ date: key, ...(sums[key] || {}) }));
+  }
+
   /** Daily history for the last N days (each entry is a delta counter map). */
   getDailyHistory(serial, days = 30) {
     const out = [];

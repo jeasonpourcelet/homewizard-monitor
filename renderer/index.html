@@ -23,13 +23,20 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Historique quotidien</h2>
+          <h2>Historique</h2>
           <select id="hist-device" class="select"></select>
+        </div>
+        <div class="ranges" id="ranges">
+          <button data-range="live" class="range">Instantané</button>
+          <button data-range="day" class="range active">Jour</button>
+          <button data-range="week" class="range">Semaine</button>
+          <button data-range="month" class="range">Mois</button>
+          <button data-range="year" class="range">Année</button>
         </div>
         <canvas id="chart" height="180"></canvas>
         <p class="muted small">
-          L'historique se construit jour après jour à partir des compteurs cumulés
-          des appareils (l'API locale ne stocke pas le passé).
+          L'historique se construit au fil du temps à partir des compteurs cumulés
+          (l'API locale ne stocke pas le passé). « Instantané » montre la mesure en direct.
         </p>
       </section>
     </main>
@@ -57,6 +64,22 @@
       <div class="panel">
         <h3>Appareils suivis</h3>
         <div id="selected-list" class="device-list"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Indicateur barre des tâches</h3>
+        <p class="muted small">Choisis la valeur affichée sur l'icône du tray (comme un widget).</p>
+        <div class="row">
+          <select id="tray-device" class="select" style="flex:1"></select>
+          <select id="tray-type" class="select">
+            <option value="off">Logo (rien)</option>
+            <option value="soc">% batterie</option>
+            <option value="power">Puissance</option>
+            <option value="flow">Débit eau</option>
+          </select>
+        </div>
+        <button id="btn-tray-save" class="secondary" style="margin-top:8px">Appliquer l'indicateur</button>
+        <span id="tray-status" class="muted small"></span>
       </div>
 
       <button id="btn-save" class="primary wide">💾 Enregistrer</button>

@@ -130,6 +130,16 @@ button { font-family: inherit; cursor: pointer; border-radius: 8px; border: 1px 
 .soc-fill { height: 100%; background: linear-gradient(90deg, #34d399, #10b981); transition: width .4s ease; }
 .soc-val { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 42px; text-align: right; }
 
+/* Sélecteur de vue du graphique */
+.ranges { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.range {
+  background: var(--panel-2); color: var(--muted);
+  border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 10px; font-size: 12px;
+}
+.range:hover { color: var(--txt); }
+.range.active { background: var(--accent); color: #06302b; border-color: var(--accent); font-weight: 600; }
+
 /* Sous-ligne (gaz dans la carte P1) */
 .subline { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; }
 .subline .muted { font-size: 12px; }

@@ -5,6 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const hw = require('./homewizard');
 const { Store } = require('./store');
+const { renderValueIcon } = require('./tray-icon');
 
 // Journal de diagnostic (le stderr d'Electron n'est pas toujours capturé).
 const DIAG = path.join(require('node:os').tmpdir(), 'hwm-diag.log');
@@ -68,8 +69,30 @@ async function pollOnce() {
   }
 
   lastSnapshot = snapshot;
+  recordLive(snapshot);
   updateTrayTooltip(snapshot);
+  updateTrayIcon(snapshot);
   if (win && !win.isDestroyed()) win.webContents.send('state-update', snapshot);
+}
+
+// ---------------------------------------------------------------------------
+// Live samples (in-memory ring buffer for the "instant" chart view)
+// ---------------------------------------------------------------------------
+const liveBuffers = {}; // serial -> [{ t, v }]
+const LIVE_MAX = 180; // ~6 min at 2s
+
+function recordLive(snapshot) {
+  const t = Date.now();
+  for (const d of snapshot.devices) {
+    if (!d.online) continue;
+    const v = d.kind === 'battery' && d.socPct != null ? d.socPct
+      : d.kind === 'water' ? d.flowLpm
+      : d.powerW;
+    if (v == null) continue;
+    const buf = (liveBuffers[d.serial] ||= []);
+    buf.push({ t, v });
+    if (buf.length > LIVE_MAX) buf.shift();
+  }
 }
 
 function startPolling() {
@@ -159,6 +182,36 @@ function updateTrayTooltip(snapshot) {
   tray.setToolTip('HomeWizard Monitor\n' + tip);
 }
 
+// Dynamic tray icon : renders a chosen value (e.g. battery %) onto the icon.
+let baseTrayImage = null;
+function trayValueText(d, type) {
+  if (type === 'soc') return d.socPct != null ? String(Math.round(d.socPct)) : '--';
+  if (type === 'power') {
+    if (d.powerW == null) return '--';
+    return Math.abs(d.powerW) >= 1000 ? (d.powerW / 1000).toFixed(1) : String(Math.round(d.powerW));
+  }
+  if (type === 'flow') return d.flowLpm != null ? String(d.flowLpm) : '--';
+  return null;
+}
+
+function updateTrayIcon(snapshot) {
+  if (!tray) return;
+  const tm = store.config.trayMetric;
+  if (!tm || tm.type === 'off' || !tm.serial) {
+    if (!baseTrayImage) baseTrayImage = nativeImage.createFromPath(ICON_PATH);
+    tray.setImage(baseTrayImage);
+    return;
+  }
+  const d = snapshot.devices.find((x) => x.serial === tm.serial && x.online);
+  const text = d ? trayValueText(d, tm.type) : '--';
+  const fg = tm.type === 'soc' ? [52, 211, 153] : tm.type === 'flow' ? [56, 189, 248] : [245, 158, 11];
+  try {
+    tray.setImage(nativeImage.createFromBuffer(renderValueIcon(text, { fg })));
+  } catch (e) {
+    diag('tray icon error: ' + e.message);
+  }
+}
+
 function isAutoLaunch() {
   try {
     return app.getLoginItemSettings().openAtLogin;
@@ -235,6 +288,7 @@ function showWindow() {
 // ---------------------------------------------------------------------------
 // IPC
 // ---------------------------------------------------------------------------
+ipcMain.on('renderer-error', (_e, msg) => diag('RENDERER: ' + msg));
 ipcMain.handle('get-state', () => lastSnapshot);
 ipcMain.handle('get-config', () => store.config);
 ipcMain.handle('discover', async () => {
@@ -271,6 +325,17 @@ ipcMain.handle('pair-device', async (event, ip) => {
   }
 });
 ipcMain.handle('get-history', (_e, serial, days) => store.getDailyHistory(serial, days || 30));
+ipcMain.handle('get-aggregated', (_e, serial, granularity, buckets) =>
+  store.getAggregatedHistory(serial, granularity, buckets)
+);
+ipcMain.handle('get-live', (_e, serial) => liveBuffers[serial] || []);
+ipcMain.handle('get-tray-metric', () => store.config.trayMetric || { type: 'off', serial: null });
+ipcMain.handle('set-tray-metric', (_e, tm) => {
+  store.config.trayMetric = tm;
+  store.saveConfig();
+  updateTrayIcon(lastSnapshot);
+  return store.config.trayMetric;
+});
 
 // ---------------------------------------------------------------------------
 // Cycle de vie

@@ -1,10 +1,19 @@
 'use strict';
 
+// Surface renderer errors to the main process diagnostic log.
+window.addEventListener('error', (e) =>
+  window.hwm?.reportError?.((e.error && e.error.stack) || e.message)
+);
+window.addEventListener('unhandledrejection', (e) =>
+  window.hwm?.reportError?.('rejection: ' + ((e.reason && e.reason.stack) || e.reason))
+);
+
 const $ = (id) => document.getElementById(id);
 let chart = null;
 let lastDevices = [];      // dernier snapshot live
 let selected = [];         // appareils suivis (config en cours d'édition)
 let chartSerial = null;
+let chartRange = 'day';    // live | day | week | month | year
 
 // --------------------------------------------------------------------------
 // Formatage
@@ -162,36 +171,24 @@ function updateHeader(snapshot) {
 }
 
 // --------------------------------------------------------------------------
-// Graphique historique
+// Graphique historique — vues : live / jour / semaine / mois / année
 // --------------------------------------------------------------------------
-async function refreshChart() {
-  if (!chartSerial) return;
-  const dev = lastDevices.find((d) => d.serial === chartSerial);
-  const kind = dev?.kind || 'energy';
-  const hist = await window.hwm.getHistory(chartSerial, 30);
-  const labels = hist.map((h) => h.date.slice(5));
+let chartType = null; // 'bar' | 'line' (recrée le chart si le type change)
 
-  // Datasets depend on the device family.
-  let datasets;
-  if (kind === 'water') {
-    datasets = [{ label: 'Eau (m³)', data: hist.map((h) => h.water ?? 0), backgroundColor: '#38bdf8' }];
-  } else {
-    datasets = [
-      { label: 'Import (kWh)', data: hist.map((h) => h.import ?? 0), backgroundColor: '#f59e0b' },
-      { label: 'Export (kWh)', data: hist.map((h) => h.export ?? 0), backgroundColor: '#34d399' },
-    ];
-    if (hist.some((h) => h.gas != null)) {
-      datasets.push({ label: 'Gaz (m³)', data: hist.map((h) => h.gas ?? 0), backgroundColor: '#fb7185' });
-    }
+function setChart(type, labels, datasets) {
+  if (chart && chartType !== type) {
+    chart.destroy();
+    chart = null;
   }
-
+  chartType = type;
   if (!chart) {
     const ctx = $('chart').getContext('2d');
     chart = new Chart(ctx, {
-      type: 'bar',
+      type,
       data: { labels, datasets },
       options: {
         responsive: true,
+        animation: false,
         plugins: { legend: { labels: { color: '#8a97a6', boxWidth: 12 } } },
         scales: {
           x: { ticks: { color: '#8a97a6', maxRotation: 0, autoSkip: true }, grid: { display: false } },
@@ -204,6 +201,50 @@ async function refreshChart() {
     chart.data.datasets = datasets;
     chart.update();
   }
+}
+
+function barDatasets(kind, rows) {
+  if (kind === 'water')
+    return [{ label: 'Eau (m³)', data: rows.map((h) => h.water ?? 0), backgroundColor: '#38bdf8' }];
+  if (kind === 'gas')
+    return [{ label: 'Gaz (m³)', data: rows.map((h) => h.gas ?? 0), backgroundColor: '#fb7185' }];
+  const ds = [
+    { label: 'Import (kWh)', data: rows.map((h) => h.import ?? 0), backgroundColor: '#f59e0b' },
+    { label: 'Export (kWh)', data: rows.map((h) => h.export ?? 0), backgroundColor: '#34d399' },
+  ];
+  if (rows.some((h) => h.gas != null))
+    ds.push({ label: 'Gaz (m³)', data: rows.map((h) => h.gas ?? 0), backgroundColor: '#fb7185' });
+  return ds;
+}
+
+async function refreshChart() {
+  if (!chartSerial) return;
+  const dev = lastDevices.find((d) => d.serial === chartSerial);
+  const kind = dev?.kind || 'energy';
+
+  if (chartRange === 'live') {
+    const buf = await window.hwm.getLive(chartSerial);
+    const labels = buf.map((p) => {
+      const t = new Date(p.t);
+      return String(t.getMinutes()).padStart(2, '0') + ':' + String(t.getSeconds()).padStart(2, '0');
+    });
+    const unit = kind === 'battery' ? 'Charge (%)' : kind === 'water' ? 'Débit (L/min)' : 'Puissance (W)';
+    const color = kind === 'battery' ? '#34d399' : kind === 'water' ? '#38bdf8' : '#f59e0b';
+    setChart('line', labels, [
+      { label: unit, data: buf.map((p) => p.v), borderColor: color, backgroundColor: color,
+        fill: false, pointRadius: 0, tension: 0.25, borderWidth: 2 },
+    ]);
+    return;
+  }
+
+  let rows;
+  if (chartRange === 'day') rows = await window.hwm.getHistory(chartSerial, 30);
+  else if (chartRange === 'week') rows = await window.hwm.getAggregated(chartSerial, 'week', 12);
+  else if (chartRange === 'month') rows = await window.hwm.getAggregated(chartSerial, 'month', 12);
+  else rows = await window.hwm.getAggregated(chartSerial, 'year', 5);
+
+  const labels = rows.map((h) => (chartRange === 'day' ? h.date.slice(5) : h.date));
+  setChart('bar', labels, barDatasets(kind, rows));
 }
 
 // --------------------------------------------------------------------------
@@ -359,10 +400,14 @@ async function init() {
     if (!$('view-dashboard').hidden) {
       renderCards(s);
       updateHeader(s);
+      if (chartRange === 'live') refreshChart(); // suit la mesure en direct
     }
   });
 
-  $('btn-settings').addEventListener('click', () => showSettings(true));
+  $('btn-settings').addEventListener('click', () => {
+    showSettings(true);
+    populateTraySettings();
+  });
   $('btn-back').addEventListener('click', () => showSettings(false));
   $('btn-discover').addEventListener('click', runDiscover);
   $('btn-add-ip').addEventListener('click', addManualIp);
@@ -375,11 +420,41 @@ async function init() {
     refreshChart();
   });
 
+  // Sélecteur de vue (Instantané / Jour / Semaine / Mois / Année).
+  $('ranges').querySelectorAll('.range').forEach((b) =>
+    b.addEventListener('click', () => {
+      chartRange = b.dataset.range;
+      $('ranges').querySelectorAll('.range').forEach((x) => x.classList.toggle('active', x === b));
+      refreshChart();
+    })
+  );
+
+  // Widget barre des tâches.
+  $('btn-tray-save').addEventListener('click', saveTraySettings);
+
   // Si aucun appareil suivi, ouvrir directement les réglages.
   if (!selected.length) showSettings(true);
 
-  // Rafraîchit le graphique périodiquement (les totaux jour évoluent).
+  // Rafraîchit le graphique périodiquement (les totaux évoluent).
   setInterval(() => { if (!$('view-dashboard').hidden) refreshChart(); }, 30000);
+}
+
+// --------------------------------------------------------------------------
+// Réglage du widget barre des tâches
+// --------------------------------------------------------------------------
+async function populateTraySettings() {
+  const devSel = $('tray-device');
+  devSel.innerHTML = selected.map((d) => `<option value="${d.serial}">${d.label}</option>`).join('');
+  const tm = await window.hwm.getTrayMetric();
+  if (tm && tm.serial) devSel.value = tm.serial;
+  $('tray-type').value = (tm && tm.type) || 'off';
+}
+
+async function saveTraySettings() {
+  const tm = { serial: $('tray-device').value, type: $('tray-type').value };
+  await window.hwm.setTrayMetric(tm);
+  $('tray-status').textContent = ' ✅ Indicateur appliqué';
+  setTimeout(() => ($('tray-status').textContent = ''), 2500);
 }
 
 init();
