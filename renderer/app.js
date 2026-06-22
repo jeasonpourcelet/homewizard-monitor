@@ -55,7 +55,7 @@ function cardHead(d, badgeExtra = '') {
 function renderCard(d) {
   if (!d.online) {
     const msg = d.needsPairing
-      ? `🔗 Appairage requis — ouvrez <b>⚙ Réglages</b> et cliquez « Appairer », puis pressez le bouton de l'appareil.`
+      ? `🔗 Appairage requis — onglet <b>Appareils</b> → « Appairer », puis pressez le bouton de l'appareil.`
       : `Hors ligne — ${d.errorMsg || 'injoignable'}`;
     return `<div class="card">
       <div class="card-head">
@@ -121,24 +121,38 @@ function cardWater(d) {
   </div>`;
 }
 
+function gaugeSVG(pct, color) {
+  const r = 40, c = 2 * Math.PI * r;
+  const off = c * (1 - (pct ?? 0) / 100);
+  return `<div class="gauge">
+    <svg width="96" height="96" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" r="${r}" fill="none" stroke="var(--line)" stroke-width="9"/>
+      <circle cx="48" cy="48" r="${r}" fill="none" stroke="${color}" stroke-width="9"
+        stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+    </svg>
+    <div class="gauge-val">${pct != null ? pct + '%' : '—'}</div>
+  </div>`;
+}
+
 function cardBattery(d) {
   const p = fmtPower(d.powerW);
   const soc = d.socPct != null ? Math.round(d.socPct) : null;
   const charging = d.powerW > 0;
-  const battDir = d.powerW > 0 ? 'export' : d.powerW < 0 ? 'import' : '';
-  return `<div class="card">
-    ${cardHead(d, d.cycles != null ? ' · ' + d.cycles + ' cycles' : '')}
-    ${soc != null
-      ? `<div class="soc"><div class="soc-bar"><div class="soc-fill" style="width:${soc}%"></div></div>
-         <span class="soc-val">${soc}%</span></div>` : ''}
-    <div class="power ${battDir}">${p.val} <small>${p.unit} ${
-      d.powerW === 0 ? 'au repos' : charging ? 'en charge' : 'en décharge'
-    }</small></div>
-    <div class="totals">
-      <div class="col"><div class="k">Chargé auj.</div>
-        <div class="v"><span class="down">${num(d.day?.import)}</span> kWh</div></div>
-      <div class="col"><div class="k">Fourni auj.</div>
-        <div class="v"><span class="up">${num(d.day?.export)}</span> kWh</div></div>
+  const stateLabel = d.powerW === 0 ? 'au repos' : charging ? 'en charge' : 'en décharge';
+  const color = soc == null ? 'var(--muted)' : soc <= 20 ? 'var(--import)' : 'var(--battery)';
+  return `<div class="card gauge-card">
+    ${gaugeSVG(soc, color)}
+    <div class="gauge-info">
+      <div class="card-title" style="margin-bottom:8px"><span class="dot"></span>🔋 ${d.label}</div>
+      <div class="power ${charging ? 'export' : d.powerW < 0 ? 'import' : ''}">${p.val}
+        <small>${p.unit} ${stateLabel}</small></div>
+      <div class="totals">
+        <div class="col"><div class="k">Chargé auj.</div>
+          <div class="v"><span class="down">${num(d.day?.import)}</span> kWh</div></div>
+        <div class="col"><div class="k">Fourni auj.</div>
+          <div class="v"><span class="up">${num(d.day?.export)}</span> kWh</div></div>
+      </div>
+      ${d.cycles != null ? `<div class="badge" style="margin-top:8px">${d.cycles} cycles</div>` : ''}
     </div>
   </div>`;
 }
@@ -147,7 +161,7 @@ function renderCards(snapshot) {
   lastDevices = snapshot.devices || [];
   const c = $('cards');
   if (!lastDevices.length) {
-    c.innerHTML = `<div class="card"><p class="muted">Aucun appareil suivi. Cliquez sur ⚙ pour en ajouter.</p></div>`;
+    c.innerHTML = `<div class="card"><p class="muted">Aucun appareil suivi. Ouvrez l'onglet <b>Appareils</b> pour en ajouter.</p></div>`;
     return;
   }
   c.innerHTML = lastDevices.map(renderCard).join('');
@@ -188,11 +202,12 @@ function setChart(type, labels, datasets) {
       data: { labels, datasets },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         animation: false,
-        plugins: { legend: { labels: { color: '#8a97a6', boxWidth: 12 } } },
+        plugins: { legend: { labels: { color: '#8595a3', boxWidth: 12 } } },
         scales: {
-          x: { ticks: { color: '#8a97a6', maxRotation: 0, autoSkip: true }, grid: { display: false } },
-          y: { ticks: { color: '#8a97a6' }, grid: { color: '#2c3744' } },
+          x: { ticks: { color: '#8595a3', maxRotation: 0, autoSkip: true }, grid: { display: false } },
+          y: { ticks: { color: '#8595a3' }, grid: { color: '#25323d' } },
         },
       },
     });
@@ -379,11 +394,20 @@ async function addManualIp() {
 }
 
 // --------------------------------------------------------------------------
-// Navigation
+// Navigation par onglets
 // --------------------------------------------------------------------------
-function showSettings(show) {
-  $('view-settings').hidden = !show;
-  $('view-dashboard').hidden = show;
+let currentView = 'overview';
+
+function switchView(name) {
+  currentView = name;
+  document.querySelectorAll('.nav-item').forEach((b) =>
+    b.classList.toggle('active', b.dataset.view === name)
+  );
+  ['overview', 'charts', 'devices'].forEach((v) => {
+    $('view-' + v).hidden = v !== name;
+  });
+  if (name === 'charts') refreshChart();
+  if (name === 'devices') populateTraySettings();
 }
 
 // --------------------------------------------------------------------------
@@ -399,34 +423,32 @@ async function init() {
   updateHeader(snap);
 
   window.hwm.onState((s) => {
-    if (!$('view-dashboard').hidden) {
-      renderCards(s);
-      updateHeader(s);
-      if (chartRange === 'live') refreshChart(); // suit la mesure en direct
-    }
+    renderCards(s);
+    updateHeader(s);
+    if (currentView === 'charts' && chartRange === 'live') refreshChart();
   });
 
-  $('btn-settings').addEventListener('click', () => {
-    showSettings(true);
-    populateTraySettings();
-  });
-  $('btn-back').addEventListener('click', () => showSettings(false));
+  // Onglets latéraux.
+  document.querySelectorAll('.nav-item').forEach((b) =>
+    b.addEventListener('click', () => switchView(b.dataset.view))
+  );
+
   $('btn-discover').addEventListener('click', runDiscover);
   $('btn-add-ip').addEventListener('click', addManualIp);
   $('btn-save').addEventListener('click', async () => {
     await window.hwm.saveDevices(selected);
-    showSettings(false);
+    switchView('overview');
   });
   $('hist-device').addEventListener('change', (e) => {
     chartSerial = e.target.value;
     refreshChart();
   });
 
-  // Sélecteur de vue (Instantané / Jour / Semaine / Mois / Année).
-  $('ranges').querySelectorAll('.range').forEach((b) =>
+  // Sélecteur de vue temporelle (Instantané / Jour / Semaine / Mois / Année).
+  $('ranges').querySelectorAll('.seg').forEach((b) =>
     b.addEventListener('click', () => {
       chartRange = b.dataset.range;
-      $('ranges').querySelectorAll('.range').forEach((x) => x.classList.toggle('active', x === b));
+      $('ranges').querySelectorAll('.seg').forEach((x) => x.classList.toggle('active', x === b));
       refreshChart();
     })
   );
@@ -434,11 +456,11 @@ async function init() {
   // Widget barre des tâches.
   $('btn-tray-save').addEventListener('click', saveTraySettings);
 
-  // Si aucun appareil suivi, ouvrir directement les réglages.
-  if (!selected.length) showSettings(true);
+  // Si aucun appareil suivi, ouvrir directement l'onglet Appareils.
+  if (!selected.length) switchView('devices');
 
   // Rafraîchit le graphique périodiquement (les totaux évoluent).
-  setInterval(() => { if (!$('view-dashboard').hidden) refreshChart(); }, 30000);
+  setInterval(() => { if (currentView === 'charts') refreshChart(); }, 30000);
 }
 
 // --------------------------------------------------------------------------

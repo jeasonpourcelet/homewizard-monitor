@@ -258,12 +258,15 @@ function createTray() {
 // ---------------------------------------------------------------------------
 function createWindow() {
   win = new BrowserWindow({
-    width: 460,
+    width: 1040,
     height: 680,
+    minWidth: 880,
+    minHeight: 560,
     show: false,
     resizable: true,
     title: 'HomeWizard Monitor',
     icon: ICON_PATH,
+    backgroundColor: '#0c1116',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

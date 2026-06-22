@@ -7,83 +7,106 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header>
-      <div class="brand">
-        <span class="logo">⚡</span>
-        <div>
-          <h1>HomeWizard Monitor</h1>
-          <p id="updated" class="muted">En attente…</p>
+    <div class="app">
+      <!-- Navigation latérale -->
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="logo">⚡</span>
+          <span class="brand-name">HomeWizard<br /><small>Monitor</small></span>
         </div>
-      </div>
-      <button id="btn-settings" class="ghost" title="Configurer les appareils">⚙</button>
-    </header>
-
-    <main id="view-dashboard">
-      <section id="cards" class="cards"></section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Historique</h2>
-          <select id="hist-device" class="select"></select>
+        <nav class="nav">
+          <button class="nav-item active" data-view="overview"><span>📊</span> Aperçu</button>
+          <button class="nav-item" data-view="charts"><span>📈</span> Graphiques</button>
+          <button class="nav-item" data-view="devices"><span>🔌</span> Appareils</button>
+        </nav>
+        <div class="sidebar-foot">
+          <p id="updated" class="muted small">En attente…</p>
         </div>
-        <div class="ranges" id="ranges">
-          <button data-range="live" class="range">Instantané</button>
-          <button data-range="day" class="range active">Jour</button>
-          <button data-range="week" class="range">Semaine</button>
-          <button data-range="month" class="range">Mois</button>
-          <button data-range="year" class="range">Année</button>
-        </div>
-        <canvas id="chart" height="180"></canvas>
-        <p class="muted small">
-          L'historique se construit au fil du temps à partir des compteurs cumulés
-          (l'API locale ne stocke pas le passé). « Instantané » montre la mesure en direct.
-        </p>
-      </section>
-    </main>
+      </aside>
 
-    <main id="view-settings" hidden>
-      <div class="panel-head">
-        <h2>Appareils</h2>
-        <button id="btn-back" class="ghost">← Retour</button>
-      </div>
+      <!-- Zone principale -->
+      <main class="content">
+        <!-- ===== Aperçu ===== -->
+        <section id="view-overview" class="view">
+          <header class="view-head">
+            <h1>Aperçu en temps réel</h1>
+          </header>
+          <div id="cards" class="cards-grid"></div>
+        </section>
 
-      <button id="btn-discover" class="primary">🔍 Découvrir sur le réseau</button>
-      <p id="discover-status" class="muted small"></p>
+        <!-- ===== Graphiques ===== -->
+        <section id="view-charts" class="view" hidden>
+          <header class="view-head">
+            <h1>Graphiques</h1>
+            <select id="hist-device" class="select"></select>
+          </header>
+          <div class="segmented" id="ranges">
+            <button data-range="live" class="seg">Instantané</button>
+            <button data-range="day" class="seg active">Jour</button>
+            <button data-range="week" class="seg">Semaine</button>
+            <button data-range="month" class="seg">Mois</button>
+            <button data-range="year" class="seg">Année</button>
+          </div>
+          <div class="chart-card">
+            <canvas id="chart"></canvas>
+          </div>
+          <p class="muted small">
+            L'historique se construit au fil du temps à partir des compteurs cumulés
+            (l'API locale ne garde pas le passé). « Instantané » trace la mesure en direct.
+          </p>
+        </section>
 
-      <div id="discovered" class="device-list"></div>
+        <!-- ===== Appareils ===== -->
+        <section id="view-devices" class="view" hidden>
+          <header class="view-head">
+            <h1>Appareils &amp; réglages</h1>
+          </header>
+          <div class="devices-cols">
+            <div class="col-main">
+              <div class="panel">
+                <div class="panel-head">
+                  <h2>Appareils suivis</h2>
+                  <button id="btn-discover" class="primary sm">🔍 Découvrir</button>
+                </div>
+                <p id="discover-status" class="muted small"></p>
+                <div id="discovered" class="device-list"></div>
+                <div id="selected-list" class="device-list"></div>
+              </div>
 
-      <div class="manual">
-        <h3>Ajouter par adresse IP</h3>
-        <div class="row">
-          <input id="manual-ip" class="input" placeholder="192.168.1.42" />
-          <button id="btn-add-ip" class="secondary">Tester &amp; ajouter</button>
-        </div>
-        <p id="manual-status" class="muted small"></p>
-      </div>
+              <div class="panel">
+                <h3>Ajouter par adresse IP</h3>
+                <div class="row">
+                  <input id="manual-ip" class="input" placeholder="192.168.1.42" />
+                  <button id="btn-add-ip" class="secondary">Tester &amp; ajouter</button>
+                </div>
+                <p id="manual-status" class="muted small"></p>
+              </div>
+            </div>
 
-      <div class="panel">
-        <h3>Appareils suivis</h3>
-        <div id="selected-list" class="device-list"></div>
-      </div>
-
-      <div class="panel">
-        <h3>Indicateur barre des tâches</h3>
-        <p class="muted small">Choisis la valeur affichée sur l'icône du tray (comme un widget).</p>
-        <div class="row">
-          <select id="tray-device" class="select" style="flex:1"></select>
-          <select id="tray-type" class="select">
-            <option value="off">Logo (rien)</option>
-            <option value="soc">% batterie</option>
-            <option value="power">Puissance</option>
-            <option value="flow">Débit eau</option>
-          </select>
-        </div>
-        <button id="btn-tray-save" class="secondary" style="margin-top:8px">Appliquer l'indicateur</button>
-        <span id="tray-status" class="muted small"></span>
-      </div>
-
-      <button id="btn-save" class="primary wide">💾 Enregistrer</button>
-    </main>
+            <div class="col-side">
+              <div class="panel">
+                <h3>Indicateur barre des tâches</h3>
+                <p class="muted small">La valeur affichée sur l'icône, comme un widget.</p>
+                <label class="field">Appareil
+                  <select id="tray-device" class="select wide"></select>
+                </label>
+                <label class="field">Donnée
+                  <select id="tray-type" class="select wide">
+                    <option value="off">Logo (rien)</option>
+                    <option value="soc">% batterie</option>
+                    <option value="power">Puissance</option>
+                    <option value="flow">Débit eau</option>
+                  </select>
+                </label>
+                <button id="btn-tray-save" class="secondary wide">Appliquer</button>
+                <span id="tray-status" class="muted small"></span>
+              </div>
+              <button id="btn-save" class="primary wide">💾 Enregistrer les appareils</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
 
     <script src="../node_modules/chart.js/dist/chart.umd.js"></script>
     <script src="app.js"></script>
