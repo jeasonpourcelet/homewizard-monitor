@@ -124,7 +124,14 @@ public sealed class WidgetProvider : IWidgetProvider
                 bool online = o["online"]?.GetValue<bool>() ?? false;
                 double? p = o["powerW"]?.GetValue<double?>();
                 if (!online) continue;
-                if (kind is "batteries" or "battery") battery = FmtW(p);
+                if (kind is "battery" or "batteries")
+                {
+                    double? soc = o["socPct"]?.GetValue<double?>();
+                    // % en priorité (l'info la plus importante), puissance en complément.
+                    battery = soc.HasValue
+                        ? $"{Math.Round(soc.Value)} % · {FmtW(p)}"
+                        : FmtW(p);
+                }
                 else if (role == "grid") grid = FmtW(p);
                 else if (role is "solar" or "energy") solar = FmtW(p);
                 else if (kind == "gas")
