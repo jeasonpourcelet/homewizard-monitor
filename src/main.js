@@ -33,43 +33,46 @@ async function pollOnce() {
   const devices = store.getDevices();
   const snapshot = { devices: [], updatedAt: new Date().toISOString(), error: null };
 
-  for (const dev of devices) {
-    const entry = {
-      serial: dev.serial,
-      ip: dev.ip,
-      label: dev.label,
-      role: dev.role,
-      kind: dev.kind || hw.describeProduct(dev.productType).kind,
-      productType: dev.productType,
-      online: false,
-    };
-    try {
-      const m = await readDeviceWithHealing(dev, entry);
-      const totals = store.record(dev.serial, m.counters);
-      Object.assign(entry, {
-        online: true,
-        kind: m.kind,
-        powerW: m.powerW,
-        importKwh: m.importKwh,
-        exportKwh: m.exportKwh,
-        socPct: m.socPct,
-        cycles: m.cycles,
-        waterM3: m.waterM3,
-        flowLpm: m.flowLpm,
-        gasM3: m.gasM3,
-        switchState: m.switchState,
-        mode: m.mode,
-        batteryCount: m.batteryCount,
-        day: totals.day,
-        month: totals.month,
-        raw: m.raw, // réponse API brute, pour l'onglet « Données »
-      });
-    } catch (e) {
-      entry.errorMsg = e.message;
-      if (/token/i.test(e.message)) entry.needsPairing = true;
-    }
-    snapshot.devices.push(entry);
-  }
+  // Relevés en parallèle : un cycle dure le temps du plus lent, pas la somme.
+  snapshot.devices = await Promise.all(
+    devices.map(async (dev) => {
+      const entry = {
+        serial: dev.serial,
+        ip: dev.ip,
+        label: dev.label,
+        role: dev.role,
+        kind: dev.kind || hw.describeProduct(dev.productType).kind,
+        productType: dev.productType,
+        online: false,
+      };
+      try {
+        const m = await readDeviceWithHealing(dev, entry);
+        const totals = store.record(dev.serial, m.counters);
+        Object.assign(entry, {
+          online: true,
+          kind: m.kind,
+          powerW: m.powerW,
+          importKwh: m.importKwh,
+          exportKwh: m.exportKwh,
+          socPct: m.socPct,
+          cycles: m.cycles,
+          waterM3: m.waterM3,
+          flowLpm: m.flowLpm,
+          gasM3: m.gasM3,
+          switchState: m.switchState,
+          mode: m.mode,
+          batteryCount: m.batteryCount,
+          day: totals.day,
+          month: totals.month,
+          raw: m.raw, // réponse API brute, pour l'onglet « Données »
+        });
+      } catch (e) {
+        entry.errorMsg = e.message;
+        if (/token/i.test(e.message)) entry.needsPairing = true;
+      }
+      return entry;
+    })
+  );
 
   lastSnapshot = snapshot;
   try {
@@ -151,9 +154,15 @@ function stopPolling() {
 const healState = {}; // serial -> { lastAttempt, scanning }
 
 function maybeHeal(dev) {
+  // Ne pas scanner si TOUT est hors ligne : c'est le réseau qui est coupé, pas
+  // une IP qui a changé — inutile d'inonder un Wi-Fi déjà saturé. On ne cherche
+  // une IP déplacée que si au moins un autre appareil répond (réseau OK).
+  const anyOnline = (lastSnapshot.devices || []).some((d) => d.online);
+  if (!anyOnline) return;
+
   const st = (healState[dev.serial] ||= { lastAttempt: 0, scanning: false });
   const now = Date.now();
-  if (st.scanning || now - st.lastAttempt < 60000) return;
+  if (st.scanning || now - st.lastAttempt < 300000) return; // max 1 scan / 5 min / appareil
   st.scanning = true;
   st.lastAttempt = now;
   diag(`rediscovery: ${dev.serial} unreachable at ${dev.ip}, scanning /24 by serial...`);

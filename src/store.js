@@ -28,9 +28,27 @@ class Store {
     this.baselinePath = path.join(dir, 'baselines.json');
     this.historyPath = path.join(dir, 'history.json');
 
-    this.config = this._read(this.configPath, { devices: [], pollIntervalMs: 2000 });
+    this.configBakPath = path.join(dir, 'config.bak.json');
+    this.config = this._loadConfig();
     this.baselines = this._read(this.baselinePath, {}); // serial -> {dayKey, dayStart, monthKey, monthStart}
     this.history = this._read(this.historyPath, {}); // serial -> { 'YYYY-MM-DD': {<counter>: delta} }
+  }
+
+  /**
+   * Loads config.json, with recovery: if it is missing/corrupt/empty but a
+   * backup (config.bak.json) holds devices, restore from the backup so the user
+   * never loses their device list to a corrupted write.
+   */
+  _loadConfig() {
+    const fallback = { devices: [], pollIntervalMs: 2000 };
+    const main = this._read(this.configPath, null);
+    if (main && Array.isArray(main.devices) && main.devices.length > 0) return main;
+    const bak = this._read(this.configBakPath, null);
+    if (bak && Array.isArray(bak.devices) && bak.devices.length > 0) {
+      this._write(this.configPath, bak); // restore
+      return bak;
+    }
+    return main || fallback;
   }
 
   _read(file, fallback) {
@@ -49,6 +67,13 @@ class Store {
 
   saveConfig() {
     this._write(this.configPath, this.config);
+    // Sauvegarde de secours : ne l'écrase que si on a au moins un appareil
+    // (ainsi un reset accidentel à vide n'efface pas la sauvegarde).
+    if ((this.config.devices || []).length > 0) {
+      try {
+        this._write(this.configBakPath, this.config);
+      } catch {}
+    }
   }
   setDevices(devices) {
     this.config.devices = devices;
