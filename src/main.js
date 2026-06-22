@@ -69,10 +69,14 @@ async function pollOnce() {
   }
 
   lastSnapshot = snapshot;
-  recordLive(snapshot);
-  updateTrayTooltip(snapshot);
-  updateTrayIcon(snapshot);
   if (win && !win.isDestroyed()) win.webContents.send('state-update', snapshot);
+  try {
+    recordLive(snapshot);
+    updateTrayTooltip(snapshot);
+    updateTrayIcon(snapshot);
+  } catch (e) {
+    diag('tray/live update error: ' + e.message);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -291,8 +295,34 @@ function showWindow() {
 ipcMain.on('renderer-error', (_e, msg) => diag('RENDERER: ' + msg));
 ipcMain.handle('get-state', () => lastSnapshot);
 ipcMain.handle('get-config', () => store.config);
+function localSubnetBases() {
+  const bases = new Set();
+  const ifs = require('node:os').networkInterfaces();
+  for (const name of Object.keys(ifs)) {
+    for (const a of ifs[name] || []) {
+      if (a.family === 'IPv4' && !a.internal) {
+        bases.add(a.address.split('.').slice(0, 3).join('.'));
+      }
+    }
+  }
+  return [...bases];
+}
+
 ipcMain.handle('discover', async () => {
-  return hw.discoverAndProbe(5000);
+  // mDNS first (instant where it works), then a subnet scan of every local
+  // network — the scan also catches devices behind routers that block mDNS
+  // and v2 devices (battery) that only answer over HTTPS.
+  const viaMdns = await hw.discoverAndProbe(4000).catch(() => []);
+  let viaScan = [];
+  for (const base of localSubnetBases()) {
+    viaScan = viaScan.concat(await hw.scanSubnet(base, { concurrency: 40, timeoutMs: 900 }).catch(() => []));
+  }
+  const map = new Map();
+  for (const d of [...viaScan, ...viaMdns]) {
+    if (!d || d.error) continue;
+    map.set(d.serial || d.ip, d); // identified (with serial) wins over scan stub
+  }
+  return [...map.values()];
 });
 ipcMain.handle('probe-ip', async (_e, ip) => {
   try {

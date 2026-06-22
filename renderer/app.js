@@ -333,12 +333,14 @@ async function pairFlow(index) {
 }
 
 async function runDiscover() {
-  $('discover-status').textContent = 'Recherche en cours (≈5 s)…';
+  const btn = $('btn-discover');
+  btn.disabled = true;
+  $('discover-status').textContent = 'Scan du réseau en cours (jusqu\'à ~30 s)…';
   $('discovered').innerHTML = '';
-  const found = await window.hwm.discover();
+  const found = await window.hwm.discover().finally(() => (btn.disabled = false));
   if (!found.length) {
     $('discover-status').textContent =
-      "Aucun appareil trouvé. Vérifiez que l'API est activée dans l'app HomeWizard et que vous êtes sur le même Wi-Fi. Vous pouvez aussi ajouter l'IP manuellement.";
+      "Aucun appareil trouvé. Vérifiez que l'API locale est activée dans l'app HomeWizard et que le PC est sur le même réseau. Vous pouvez aussi ajouter l'IP manuellement.";
     return;
   }
   $('discover-status').textContent = `${found.length} appareil(s) trouvé(s).`;

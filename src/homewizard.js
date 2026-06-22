@@ -343,6 +343,20 @@ async function scanSubnet(base, { concurrency = 16, timeoutMs = 1500 } = {}) {
                 needsToken: desc.kind === 'battery' || r.json.api_version === 'v2',
               };
             }
+            // v2 device that hides its type until paired (battery, recent P1).
+            if (scheme === 'https' && r.status === 401) {
+              return {
+                ip,
+                serial: 'v2-' + ip,
+                productType: 'HWE-BAT',
+                apiVersion: 'v2',
+                label: 'Appareil HomeWizard v2 (à appairer)',
+                role: 'battery',
+                kind: 'battery',
+                needsToken: true,
+                unidentified: true,
+              };
+            }
           } catch {}
         }
         return null;

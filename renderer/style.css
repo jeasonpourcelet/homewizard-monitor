@@ -15,6 +15,9 @@
 
 * { box-sizing: border-box; }
 
+/* L'attribut HTML `hidden` doit toujours masquer, même face à `main { display:flex }`. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   font-family: "Segoe UI", system-ui, sans-serif;
