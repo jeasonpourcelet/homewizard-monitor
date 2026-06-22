@@ -2,7 +2,8 @@
 
 A lightweight **Windows tray app + dashboard** for [HomeWizard Energy](https://www.homewizard.com/) devices.
 Glance at your live power from the taskbar (like a weather widget), click for a full dashboard with
-real-time values and day/month history — **100% local, no cloud account required**.
+real-time values and live charts — **100% local, no cloud account required**.
+Includes a built-in **onboarding guide** so non-technical users can set it up alone.
 
 > The desktop UI is currently in **French**. Contributions to internationalize it are welcome.
 
@@ -11,14 +12,16 @@ real-time values and day/month history — **100% local, no cloud account requir
 ## ✨ Features
 
 - **Taskbar (tray) icon** — hover for a live tooltip of every device; click to open the dashboard.
-- **Real-time dashboard** — power (W/kW), direction (consumption / injection / charge / discharge),
-  state of charge for batteries, water flow, gas.
-- **Day / month totals** — built locally from the meters' cumulative counters (the local API keeps no
-  history, so the app accumulates it from first run).
-- **30-day history chart** per device (Chart.js).
-- **Auto-discovery** (mDNS) **or** manual IP entry.
-- **DHCP self-healing** — if a device's IP changes, the app finds it again by serial number.
-- **Start with Windows** (tray menu toggle) and a packaged `.exe`.
+- **Real-time dashboard** — HomeWizard-style cards: big value + live area sparkline, with battery
+  **state of charge %**, charge/discharge power, grid, solar, water flow, gas.
+- **Live charts** — instant consumption per device (the local API keeps no history, so historical
+  charts were intentionally dropped to avoid gaps when the app is closed).
+- **In-app onboarding Guide** — first-run tab with the exact steps & gotchas (enable Local API,
+  the "disable pairing button" trap, pairing sequence, troubleshooting).
+- **Raw data tab** — every field returned by each device's API, for diagnostics.
+- **Configurable taskbar indicator** — render a chosen value (e.g. battery %) on the tray icon.
+- **Auto-discovery** (mDNS + LAN subnet scan) **or** manual IP entry; **DHCP self-healing** by serial.
+- **Start with Windows** (tray menu toggle), packaged `.exe`, and a **Windows 11 Widget** (MSIX).
 - No telemetry, no cloud calls — talks only to your devices on your LAN.
 
 ## 🔌 Supported devices
@@ -29,10 +32,14 @@ All HomeWizard Wi-Fi devices that expose the local API:
 | --- | --- | --- |
 | P1 Meter | `HWE-P1` | Grid import/export, live power, gas & water (if linked to the meter) |
 | Energy Socket | `HWE-SKT` | Power, import/export, on/off state |
-| kWh Meter (1-phase) | `HWE-KWH1`, `SDM230-wifi` | Power & energy (e.g. solar production) |
-| kWh Meter (3-phase) | `HWE-KWH3`, `SDM630-wifi` | Power & energy |
+| kWh Meter (1-phase) | `HWE-KWH1`, `HWE-KWHA`, `SDM230-wifi` | Power & energy (e.g. solar production) |
+| kWh Meter (3-phase) | `HWE-KWH3`, `HWE-KWHB`, `SDM630-wifi` | Power & energy |
 | Watermeter | `HWE-WTR` | Total m³ and live flow (battery-powered: reports intermittently) |
-| Plug-In Battery | `HWE-BAT` | State of charge, charge/discharge power, cycles (API v2 + pairing) |
+| Plug-In Battery | `HWE-BAT` | **State of charge %**, charge/discharge power, cycles (API v2 — enable its Local API + pairing) |
+
+> **Pairing a battery / recent kWh meter (API v2):** enable **Local API** for that device in the
+> HomeWizard phone app, and turn **off** *"Disable pairing button"*. Then click **Pair** in the
+> Devices tab and press the device's physical button within 30 s. See the in-app **Guide** tab.
 
 > No separate solar meter? Solar still shows up as **grid export** on the P1 card.
 
