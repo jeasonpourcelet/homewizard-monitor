@@ -19,6 +19,7 @@
           <button class="nav-item" data-view="charts"><span>📈</span> Graphiques</button>
           <button class="nav-item" data-view="raw"><span>🧬</span> Données</button>
           <button class="nav-item" data-view="devices"><span>🔌</span> Appareils</button>
+          <button class="nav-item" data-view="guide"><span>📖</span> Guide</button>
         </nav>
         <div class="sidebar-foot">
           <p id="updated" class="muted small">En attente…</p>
@@ -104,6 +105,99 @@
                 <span id="tray-status" class="muted small"></span>
               </div>
               <button id="btn-save" class="primary wide">💾 Enregistrer les appareils</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Guide ===== -->
+        <section id="view-guide" class="view" hidden>
+          <header class="view-head">
+            <h1>Guide de démarrage</h1>
+          </header>
+          <div class="guide">
+            <div class="guide-intro panel">
+              <h2>👋 Bienvenue</h2>
+              <p>HomeWizard Monitor lit vos appareils HomeWizard <b>directement sur votre réseau local</b>
+              (Wi-Fi ou Ethernet). Aucun compte, aucun cloud : toutes vos données restent chez vous.</p>
+              <p class="muted small">Suivez les étapes ci-dessous. Comptez 5 minutes pour la première configuration.</p>
+            </div>
+
+            <div class="step panel">
+              <div class="step-no">1</div>
+              <div class="step-body">
+                <h3>Prérequis réseau</h3>
+                <p>Votre PC et vos appareils HomeWizard doivent être sur <b>le même réseau</b>.</p>
+                <ul>
+                  <li>Si vos appareils sont derrière un <b>routeur secondaire</b>, connectez le Wi-Fi du PC à ce routeur (vous pouvez garder l'Ethernet en parallèle).</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="step panel">
+              <div class="step-no">2</div>
+              <div class="step-body">
+                <h3>Activer l'« API locale » (app HomeWizard sur téléphone)</h3>
+                <p>Pour <b>chaque</b> appareil (P1, batterie, compteur kWh, eau) :</p>
+                <ol>
+                  <li>App <b>HomeWizard Energy</b> → ⚙ Réglages → <b>Compteurs / Appareils</b>.</li>
+                  <li>Sélectionnez l'appareil → activez <b>« API locale »</b>.</li>
+                </ol>
+                <div class="callout warn">
+                  ⚠️ <b>Batterie & compteurs récents</b> : dans la même page, désactivez l'option
+                  <b>« Désactiver le bouton d'appairage »</b>. Sinon le bouton ne répondra pas lors de l'appairage.
+                  <span class="muted">(Astuce : redémarrer l'appareil réactive temporairement le bouton.)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="step panel">
+              <div class="step-no">3</div>
+              <div class="step-body">
+                <h3>Ajouter vos appareils</h3>
+                <p>Onglet <b>🔌 Appareils</b> :</p>
+                <ul>
+                  <li><b>🔍 Découvrir</b> : scanne votre réseau (~30 s) et liste les appareils trouvés.</li>
+                  <li>Ou <b>Ajouter par IP</b> : l'adresse IP est indiquée dans l'app HomeWizard (section « API locale » de chaque appareil).</li>
+                  <li>Cliquez <b>💾 Enregistrer</b>.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="step panel">
+              <div class="step-no">4</div>
+              <div class="step-body">
+                <h3>Appairer la batterie & les compteurs kWh récents</h3>
+                <p>Ces appareils exigent un jeton de sécurité (bouton « 🔗 Appairer » visible sur leur carte) :</p>
+                <ol>
+                  <li>Onglet Appareils → cliquez <b>🔗 Appairer</b> sur l'appareil. <b>La fenêtre de 30 s démarre.</b></li>
+                  <li><b>Pendant ces 30 s</b>, allez presser le <b>bouton physique</b> de l'appareil (appui court, 1-2 s).</li>
+                </ol>
+                <div class="callout">
+                  💡 <b>L'ordre est crucial</b> : cliquez « Appairer » <b>d'abord</b>, pressez le bouton <b>ensuite</b>.
+                  Si rien ne se passe, revérifiez l'étape 2 (API locale activée + bouton d'appairage non désactivé).
+                </div>
+              </div>
+            </div>
+
+            <div class="step panel">
+              <div class="step-no">5</div>
+              <div class="step-body">
+                <h3>Personnaliser</h3>
+                <ul>
+                  <li>Onglet Appareils → <b>Indicateur barre des tâches</b> : choisissez la valeur affichée sur l'icône (ex. <b>% batterie</b>).</li>
+                  <li>L'app vit dans la barre des tâches : <b>clic</b> = ouvrir, <b>clic droit</b> = menu (Actualiser, « Démarrer avec Windows », Quitter).</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h3>🛠️ Dépannage</h3>
+              <ul>
+                <li><b>« Aucun appareil trouvé »</b> : la découverte automatique ne traverse pas certains routeurs. Utilisez <b>Ajouter par IP</b>.</li>
+                <li><b>Appareil « hors ligne »</b> : vérifiez le Wi-Fi et que l'API locale est activée. Le compteur d'eau est sur batterie et ne répond que par intermittence (normal).</li>
+                <li><b>IP qui change</b> : l'app retrouve l'appareil par numéro de série. Pour plus de stabilité, réservez son IP dans votre routeur (DHCP).</li>
+                <li>Onglet <b>🧬 Données</b> : affiche tous les champs bruts de chaque appareil (utile pour diagnostiquer).</li>
+              </ul>
             </div>
           </div>
         </section>

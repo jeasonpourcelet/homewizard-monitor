@@ -399,7 +399,7 @@ function switchView(name) {
   document.querySelectorAll('.nav-item').forEach((b) =>
     b.classList.toggle('active', b.dataset.view === name)
   );
-  ['overview', 'charts', 'raw', 'devices'].forEach((v) => {
+  ['overview', 'charts', 'raw', 'devices', 'guide'].forEach((v) => {
     $('view-' + v).hidden = v !== name;
   });
   if (name === 'charts') refreshChart();
@@ -477,8 +477,8 @@ async function init() {
   // Widget barre des tâches.
   $('btn-tray-save').addEventListener('click', saveTraySettings);
 
-  // Si aucun appareil suivi, ouvrir directement l'onglet Appareils.
-  if (!selected.length) switchView('devices');
+  // Premier lancement (aucun appareil) : ouvrir le Guide de démarrage.
+  if (!selected.length) switchView('guide');
 }
 
 // --------------------------------------------------------------------------
