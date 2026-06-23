@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const https = require('node:https');
 const hw = require('./homewizard');
 const { Store } = require('./store');
-const { renderValueIcon, renderBoltIcon } = require('./tray-icon');
+const { renderValueIcon } = require('./tray-icon');
 
 const isMac = process.platform === 'darwin';
 
@@ -28,6 +28,9 @@ let pollTimer = null;
 let lastSnapshot = { devices: [], updatedAt: null, error: null };
 
 const ICON_PATH = path.join(__dirname, '..', 'assets', 'tray.png');
+// macOS menu-bar glyph: the brand logo (bolt + "+") as a black template image,
+// which macOS recolors (white on a dark menu bar, black on a light one).
+const TRAY_MAC_PATH = path.join(__dirname, '..', 'assets', 'tray-mac.png');
 
 // ---------------------------------------------------------------------------
 // Boucle de relevé
@@ -231,7 +234,7 @@ let baseTrayImage = null;
 function baseTrayNativeImage() {
   if (baseTrayImage) return baseTrayImage;
   if (isMac) {
-    baseTrayImage = nativeImage.createFromBuffer(renderBoltIcon(44));
+    baseTrayImage = nativeImage.createFromPath(TRAY_MAC_PATH);
     baseTrayImage.setTemplateImage(true);
   } else {
     baseTrayImage = nativeImage.createFromPath(ICON_PATH);

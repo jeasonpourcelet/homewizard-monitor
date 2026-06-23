@@ -51,10 +51,8 @@ h3 { font-size: 12px; margin: 0 0 10px; color: var(--muted); text-transform: upp
 }
 .brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 22px; }
 .logo {
-  font-size: 22px; width: 42px; height: 42px;
-  display: grid; place-items: center;
-  background: linear-gradient(135deg, #1ec9a8, #16a37f);
-  border-radius: 12px; box-shadow: 0 4px 14px rgba(30, 201, 168, 0.35);
+  width: 42px; height: 42px;
+  object-fit: contain; display: block;
 }
 .brand-name { font-weight: 700; line-height: 1.05; }
 .brand-name small { color: var(--muted); font-weight: 500; font-size: 11px; }

@@ -101,12 +101,11 @@ function encodePng({ raw, W, H }) {
 const outDir = path.join(__dirname, '..', 'assets');
 fs.mkdirSync(outDir, { recursive: true });
 
-// Icône du tray : 32px, fond transparent + contour pour contraste.
+// Icône du tray Windows : 32px, fond transparent + contour pour contraste.
 const tray = encodePng(buildRaw(2, false));
 fs.writeFileSync(path.join(outDir, 'tray.png'), tray);
 console.log('assets/tray.png généré (32x32, ' + tray.length + ' octets)');
 
-// Icône d'application : 1024px, fond arrondi (electron-builder exige >=512px pour macOS).
-const appIcon = encodePng(buildRaw(64, true));
-fs.writeFileSync(path.join(outDir, 'icon.png'), appIcon);
-console.log('assets/icon.png généré (1024x1024, ' + appIcon.length + ' octets)');
+// NB : assets/icon.png (icône d'app) et assets/tray-mac.png (glyphe blanc de la
+// barre de menus macOS) sont des ASSETS DE DESIGN dérivés de assets/logo.png —
+// ce script ne les régénère plus pour ne pas écraser le logo de la marque.
