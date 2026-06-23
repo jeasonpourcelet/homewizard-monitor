@@ -27,8 +27,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.homewizard-monitor.widget
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: HomeWizard Widget
+        INFOPLIST_KEY_CFBundleDisplayName: Home Wizard
         INFOPLIST_KEY_LSUIElement: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: Sources/App/HomeWizardWidget.entitlements
     dependencies:
       - target: HWMWidgetExtension
@@ -50,6 +51,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.homewizard-monitor.widget.ext
-        INFOPLIST_KEY_CFBundleDisplayName: HomeWizard
+        INFOPLIST_KEY_CFBundleDisplayName: Home Wizard
         CODE_SIGN_ENTITLEMENTS: Sources/Widget/HWMWidget.entitlements
         SKIP_INSTALL: YES

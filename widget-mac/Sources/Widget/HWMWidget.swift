@@ -20,8 +20,9 @@ struct Provider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<EnergyEntry>) -> Void) {
         let entry = makeEntry()
-        // macOS throttles widget refresh; ~every 5 min is a good, allowed cadence.
-        let next = Calendar.current.date(byAdding: .minute, value: 5, to: Date())!
+        // Request a fast refresh (~1 min). macOS still throttles widget reloads to
+        // a system budget, so this is a best-effort cadence, not a guarantee.
+        let next = Calendar.current.date(byAdding: .minute, value: 1, to: Date())!
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 
@@ -60,8 +61,8 @@ struct HWMWidgetView: View {
 
     private var header: some View {
         HStack(spacing: 6) {
-            Image(systemName: "bolt.fill").foregroundStyle(brandGradient)
-            Text("HomeWizard").font(.caption).bold().foregroundStyle(.secondary)
+            Image("Logo").resizable().scaledToFit().frame(width: 15, height: 15)
+            Text("Home Wizard").font(.caption).bold().foregroundStyle(.secondary)
             Spacer()
             if entry.stale {
                 Image(systemName: "wifi.slash").font(.caption2).foregroundStyle(.orange)
@@ -130,7 +131,7 @@ struct HWMWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             HWMWidgetView(entry: entry)
         }
-        .configurationDisplayName("HomeWizard")
+        .configurationDisplayName("Home Wizard")
         .description("Énergie en direct : batterie, réseau, solaire, gaz.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
