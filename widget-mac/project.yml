@@ -42,6 +42,9 @@ targets:
       - Sources/Shared
     info:
       path: Sources/Widget/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.homewizard-monitor.widget.ext
