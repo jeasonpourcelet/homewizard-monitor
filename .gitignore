@@ -11,6 +11,12 @@ out/
 **/AppPackages/
 *.user
 
+# macOS widget (Xcode): generated project + build output (regenerated from project.yml)
+widget-mac/*.xcodeproj/
+widget-mac/build/
+widget-mac/DerivedData/
+*.xcuserstate
+
 # Local runtime data & logs
 *.log
 *.tmp

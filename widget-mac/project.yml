@@ -1,0 +1,50 @@
+# XcodeGen spec — generates HomeWizardWidget.xcodeproj.
+# Install XcodeGen (brew install xcodegen) then run `xcodegen generate` here.
+name: HomeWizardWidget
+options:
+  bundleIdPrefix: io.github.homewizard-monitor
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    # Set your signing team in Xcode (Signing & Capabilities) after generating,
+    # or uncomment and fill in:
+    # DEVELOPMENT_TEAM: XXXXXXXXXX
+
+targets:
+  HomeWizardWidget:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/App
+      - Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.homewizard-monitor.widget
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: HomeWizard Widget
+        INFOPLIST_KEY_LSUIElement: NO
+        CODE_SIGN_ENTITLEMENTS: Sources/App/HomeWizardWidget.entitlements
+    dependencies:
+      - target: HWMWidgetExtension
+        embed: true
+
+  HWMWidgetExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Sources/Widget
+      - Sources/Shared
+    info:
+      path: Sources/Widget/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.homewizard-monitor.widget.ext
+        INFOPLIST_KEY_CFBundleDisplayName: HomeWizard
+        CODE_SIGN_ENTITLEMENTS: Sources/Widget/HWMWidget.entitlements
+        SKIP_INSTALL: YES
