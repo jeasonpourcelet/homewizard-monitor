@@ -17,6 +17,16 @@ Monitor must be running** for the widget to show fresh values.
   enough for WidgetKit.
 - macOS 14 (Sonoma) or newer for desktop widgets.
 
+## Quick (re)install — one command
+
+```bash
+brew install xcodegen        # once
+bash widget-mac/install.sh   # build + install + register the widget
+```
+Then add the tile: right-click the desktop → **Edit Widgets** → **Home Wizard**.
+Re-run `install.sh` whenever you change the widget code. The steps below explain
+the manual routes.
+
 ## Build — option A: XcodeGen (recommended)
 
 ```bash
