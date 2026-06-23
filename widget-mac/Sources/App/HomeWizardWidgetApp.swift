@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 /// Minimal host app. macOS requires a containing application to register and
 /// install a WidgetKit extension — run it once, then add the widget from the
@@ -25,6 +26,7 @@ struct HomeWizardWidgetApp: App {
             }
             .padding(40)
             .frame(width: 420, height: 300)
+            .onAppear { WidgetCenter.shared.reloadAllTimelines() }
         }
         .windowResizability(.contentSize)
     }

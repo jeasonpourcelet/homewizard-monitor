@@ -2,15 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Sandbox only. The Electron app mirrors latest.json into THIS extension's
+	     sandbox container (~/Library/Containers/<ext-id>/Data/), which a sandboxed
+	     widget can always read — no app group / dev certificate required. -->
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
-	<!-- Read-only access to the Electron app's support folder so the widget can
-	     read latest.json. Path is relative to the real home directory. This is a
-	     sandbox temporary exception: fine for a personal, locally-signed build
-	     (not for Mac App Store distribution). -->
-	<key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
-	<array>
-		<string>Library/Application Support/homewizard-monitor/</string>
-	</array>
 </dict>
 </plist>

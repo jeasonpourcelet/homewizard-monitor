@@ -20,24 +20,30 @@ struct EnergySnapshot {
 /// Reads + parses latest.json. No third-party deps; tolerant of missing fields.
 enum EnergyLoader {
 
-    /// Absolute path to latest.json, resolved against the *real* home directory
-    /// (getpwuid bypasses the sandbox's redirected HOME so the temporary-exception
-    /// entitlement can read the Electron app's support folder).
-    static var latestJSONPath: String {
-        let home: String
+    /// Candidate locations for latest.json, in priority order.
+    static var candidatePaths: [String] {
+        var paths: [String] = []
+        // 1) Mirrored by the Electron app into THIS widget extension's sandbox
+        //    container — a sandboxed widget can always read its own container.
+        paths.append(NSHomeDirectory() + "/latest.json")
+        // 2) Fallback: the app's real support folder (works when not sandboxed).
         if let pw = getpwuid(getuid()) {
-            home = String(cString: pw.pointee.pw_dir)
-        } else {
-            home = NSHomeDirectory()
+            let home = String(cString: pw.pointee.pw_dir)
+            paths.append(home + "/Library/Application Support/homewizard-monitor/latest.json")
         }
-        return home + "/Library/Application Support/homewizard-monitor/latest.json"
+        return paths
     }
 
     static func load() -> EnergySnapshot? {
-        let path = latestJSONPath
-        guard let data = FileManager.default.contents(atPath: path),
-              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { return nil }
+        var root: [String: Any]?
+        for path in candidatePaths {
+            if let data = FileManager.default.contents(atPath: path),
+               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                root = obj
+                break
+            }
+        }
+        guard let root = root else { return nil }
 
         var snap = EnergySnapshot(updatedAt: nil, batterySoc: nil, batteryPower: nil,
                                   gridPower: nil, solarPower: nil, gasM3: nil, anyOnline: false)

@@ -110,8 +110,27 @@ function writeLatest(snapshot) {
   };
   const tmp = path.join(app.getPath('userData'), 'latest.json.tmp');
   const dst = path.join(app.getPath('userData'), 'latest.json');
-  fs.writeFileSync(tmp, JSON.stringify(out));
+  const payload = JSON.stringify(out);
+  fs.writeFileSync(tmp, payload);
   fs.renameSync(tmp, dst);
+
+  // macOS: also mirror into the WidgetKit widget extension's sandbox container,
+  // which a sandboxed widget can read without an app group / dev certificate.
+  if (isMac) {
+    try {
+      const wdir = path.join(
+        app.getPath('home'), 'Library', 'Containers',
+        'io.github.homewizard-monitor.widget.ext', 'Data'
+      );
+      if (fs.existsSync(wdir)) {
+        const wtmp = path.join(wdir, 'latest.json.tmp');
+        fs.writeFileSync(wtmp, payload);
+        fs.renameSync(wtmp, path.join(wdir, 'latest.json'));
+      }
+    } catch {
+      /* widget not installed yet — ignore */
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
