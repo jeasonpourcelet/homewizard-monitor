@@ -47,8 +47,11 @@ function buildGrid(text) {
 /**
  * Renders `text` to a 32x32 RGBA PNG Buffer.
  * fg = digit color [r,g,b], outline = dark edge color for contrast.
+ * template = macOS template image: pixels are pure black (only alpha matters,
+ *   macOS recolors them to fit the menu bar) and the contrast outline is dropped.
  */
-function renderValueIcon(text, { fg = [255, 255, 255], outline = [10, 14, 20] } = {}) {
+function renderValueIcon(text, { fg = [255, 255, 255], outline = [10, 14, 20], template = false } = {}) {
+  if (template) fg = [0, 0, 0];
   const { grid, gridW, gridH } = buildGrid(text || '');
   const pad = 2;
   const scale = Math.max(1, Math.min(Math.floor((SIZE - 2 * pad) / gridW), Math.floor((SIZE - 2 * pad) / gridH)));
@@ -69,7 +72,9 @@ function renderValueIcon(text, { fg = [255, 255, 255], outline = [10, 14, 20] } 
         for (let sx = 0; sx < scale; sx++) setFg(offX + gx * scale + sx, offY + gy * scale + sy);
     }
   }
-  // Outline: any empty pixel touching a foreground pixel.
+  // Outline: any empty pixel touching a foreground pixel. Skipped for template
+  // images (a contrast halo makes no sense when macOS recolors the glyph).
+  if (!template)
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       if (px[y][x] !== 0) continue;
@@ -105,6 +110,55 @@ function renderValueIcon(text, { fg = [255, 255, 255], outline = [10, 14, 20] } 
   return encodePng(raw, SIZE, SIZE);
 }
 
+// Lightning-bolt outline (Feather "zap"), normalized to a 0..1 box.
+const BOLT = [
+  [0.5417, 0.0833],
+  [0.125, 0.5833],
+  [0.5, 0.5833],
+  [0.4583, 0.9167],
+  [0.875, 0.4167],
+  [0.5, 0.4167],
+];
+
+function boltContains(x, y) {
+  let inside = false;
+  for (let i = 0, j = BOLT.length - 1; i < BOLT.length; j = i++) {
+    const [xi, yi] = BOLT[i];
+    const [xj, yj] = BOLT[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Renders an anti-aliased lightning bolt to a `size`x`size` RGBA PNG Buffer.
+ * color = [r,g,b] (default black, for a macOS template image where macOS
+ *   recolors it). Edges are smoothed by SSx SS supersampling — no native deps.
+ */
+function renderBoltIcon(size = 44, { color = [0, 0, 0] } = {}) {
+  const SS = 4;
+  const raw = Buffer.alloc(size * (1 + size * 4));
+  for (let y = 0; y < size; y++) {
+    const line = y * (1 + size * 4);
+    raw[line] = 0;
+    for (let x = 0; x < size; x++) {
+      let hits = 0;
+      for (let sy = 0; sy < SS; sy++)
+        for (let sx = 0; sx < SS; sx++) {
+          const nx = (x + (sx + 0.5) / SS) / size;
+          const ny = (y + (sy + 0.5) / SS) / size;
+          if (boltContains(nx, ny)) hits++;
+        }
+      const o = line + 1 + x * 4;
+      raw[o] = color[0];
+      raw[o + 1] = color[1];
+      raw[o + 2] = color[2];
+      raw[o + 3] = Math.round((hits / (SS * SS)) * 255);
+    }
+  }
+  return encodePng(raw, size, size);
+}
+
 // --- minimal PNG encoder ---
 function crc32(buf) {
   let c = ~0;
@@ -137,4 +191,4 @@ function encodePng(raw, w, h) {
   ]);
 }
 
-module.exports = { renderValueIcon };
+module.exports = { renderValueIcon, renderBoltIcon };

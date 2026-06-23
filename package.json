@@ -28,14 +28,15 @@
     "start": "electron .",
     "dev": "electron . --dev",
     "icons": "node scripts/generate-icon.js",
-    "build": "electron-builder --win portable nsis"
+    "build": "electron-builder --win portable nsis",
+    "build:mac": "electron-builder --mac dmg"
   },
   "dependencies": {
     "bonjour-service": "^1.3.0",
     "chart.js": "^4.4.7"
   },
   "devDependencies": {
-    "electron": "^33.2.1",
+    "electron": "^33.4.11",
     "electron-builder": "^25.1.8"
   },
   "build": {
@@ -50,8 +51,31 @@
     "win": {
       "icon": "assets/icon.png",
       "target": [
-        { "target": "portable", "arch": ["x64"] },
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "icon": "assets/icon.png",
+      "category": "public.app-category.utilities",
+      "identity": null,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
       ]
     },
     "portable": {
@@ -64,5 +88,8 @@
       "createDesktopShortcut": true,
       "shortcutName": "HomeWizard Monitor"
     }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
   }
 }

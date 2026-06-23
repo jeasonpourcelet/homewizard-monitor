@@ -106,7 +106,7 @@ const tray = encodePng(buildRaw(2, false));
 fs.writeFileSync(path.join(outDir, 'tray.png'), tray);
 console.log('assets/tray.png généré (32x32, ' + tray.length + ' octets)');
 
-// Icône d'application : 256px, fond arrondi (requis par electron-builder).
-const appIcon = encodePng(buildRaw(16, true));
+// Icône d'application : 1024px, fond arrondi (electron-builder exige >=512px pour macOS).
+const appIcon = encodePng(buildRaw(64, true));
 fs.writeFileSync(path.join(outDir, 'icon.png'), appIcon);
-console.log('assets/icon.png généré (256x256, ' + appIcon.length + ' octets)');
+console.log('assets/icon.png généré (1024x1024, ' + appIcon.length + ' octets)');

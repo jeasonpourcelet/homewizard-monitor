@@ -1,11 +1,14 @@
 'use strict';
 
-const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const https = require('node:https');
 const hw = require('./homewizard');
 const { Store } = require('./store');
-const { renderValueIcon } = require('./tray-icon');
+const { renderValueIcon, renderBoltIcon } = require('./tray-icon');
+
+const isMac = process.platform === 'darwin';
 
 // Journal de diagnostic (le stderr d'Electron n'est pas toujours capturé).
 const DIAG = path.join(require('node:os').tmpdir(), 'hwm-diag.log');
@@ -223,6 +226,18 @@ function updateTrayTooltip(snapshot) {
 
 // Dynamic tray icon : renders a chosen value (e.g. battery %) onto the icon.
 let baseTrayImage = null;
+// The default tray glyph. On macOS we use a monochrome template bolt (the system
+// recolors it to fit the menu bar, light or dark); elsewhere the bundled PNG.
+function baseTrayNativeImage() {
+  if (baseTrayImage) return baseTrayImage;
+  if (isMac) {
+    baseTrayImage = nativeImage.createFromBuffer(renderBoltIcon(44));
+    baseTrayImage.setTemplateImage(true);
+  } else {
+    baseTrayImage = nativeImage.createFromPath(ICON_PATH);
+  }
+  return baseTrayImage;
+}
 function trayValueText(d, type) {
   if (type === 'soc') return d.socPct != null ? String(Math.round(d.socPct)) : '--';
   if (type === 'power') {
@@ -237,15 +252,16 @@ function updateTrayIcon(snapshot) {
   if (!tray) return;
   const tm = store.config.trayMetric;
   if (!tm || tm.type === 'off' || !tm.serial) {
-    if (!baseTrayImage) baseTrayImage = nativeImage.createFromPath(ICON_PATH);
-    tray.setImage(baseTrayImage);
+    tray.setImage(baseTrayNativeImage());
     return;
   }
   const d = snapshot.devices.find((x) => x.serial === tm.serial && x.online);
   const text = d ? trayValueText(d, tm.type) : '--';
   const fg = tm.type === 'soc' ? [52, 211, 153] : tm.type === 'flow' ? [56, 189, 248] : [245, 158, 11];
   try {
-    tray.setImage(nativeImage.createFromBuffer(renderValueIcon(text, { fg })));
+    const img = nativeImage.createFromBuffer(renderValueIcon(text, isMac ? { template: true } : { fg }));
+    if (isMac) img.setTemplateImage(true);
+    tray.setImage(img);
   } catch (e) {
     diag('tray icon error: ' + e.message);
   }
@@ -270,7 +286,7 @@ function buildTrayMenu() {
     { label: 'Actualiser maintenant', click: () => pollOnce() },
     { type: 'separator' },
     {
-      label: 'Démarrer avec Windows',
+      label: isMac ? 'Ouvrir au démarrage' : 'Démarrer avec Windows',
       type: 'checkbox',
       checked: isAutoLaunch(),
       click: (item) => setAutoLaunch(item.checked),
@@ -281,8 +297,7 @@ function buildTrayMenu() {
 }
 
 function createTray() {
-  const img = nativeImage.createFromPath(ICON_PATH);
-  tray = new Tray(img);
+  tray = new Tray(baseTrayNativeImage());
   tray.setToolTip('HomeWizard Monitor');
   tray.setContextMenu(buildTrayMenu());
   tray.on('click', showWindow);
@@ -403,6 +418,90 @@ ipcMain.handle('set-tray-metric', (_e, tm) => {
   store.saveConfig();
   updateTrayIcon(lastSnapshot);
   return store.config.trayMetric;
+});
+
+// ---------------------------------------------------------------------------
+// Vérification des mises à jour (compare la version locale à la dernière
+// GitHub Release). L'app n'étant pas signée, on ne fait que notifier + ouvrir
+// la page de téléchargement — pas d'auto-install.
+// ---------------------------------------------------------------------------
+const pkg = require('../package.json');
+
+// Déduit "owner/repo" depuis package.json (repository.url) — pas d'URL en dur.
+function repoSlug() {
+  const url = (pkg.repository && pkg.repository.url) || '';
+  const m = url.match(/github\.com[/:]([^/]+\/[^/.]+)/i);
+  return m ? m[1] : null;
+}
+
+// Compare deux versions semver "x.y.z". Renvoie true si `a` > `b`.
+function isNewerVersion(a, b) {
+  const pa = String(a).split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return true;
+    if ((pa[i] || 0) < (pb[i] || 0)) return false;
+  }
+  return false;
+}
+
+function fetchLatestRelease(slug) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        host: 'api.github.com',
+        path: `/repos/${slug}/releases/latest`,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'homewizard-monitor',
+          Accept: 'application/vnd.github+json',
+        },
+        timeout: 8000,
+      },
+      (res) => {
+        let body = '';
+        res.on('data', (c) => (body += c));
+        res.on('end', () => {
+          if (res.statusCode === 404) return resolve(null); // aucune release publiée
+          if (res.statusCode !== 200) return reject(new Error('HTTP ' + res.statusCode));
+          try {
+            const j = JSON.parse(body);
+            resolve({ tag: j.tag_name || '', url: j.html_url || `https://github.com/${slug}/releases` });
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }
+    );
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+ipcMain.handle('check-updates', async () => {
+  const current = app.getVersion();
+  const slug = repoSlug();
+  if (!slug) return { status: 'error', current, error: 'repository introuvable' };
+  try {
+    const rel = await fetchLatestRelease(slug);
+    if (!rel || !rel.tag) return { status: 'none', current };
+    const latest = rel.tag.replace(/^v/i, '');
+    return {
+      status: isNewerVersion(latest, current) ? 'update' : 'uptodate',
+      current,
+      latest,
+      url: rel.url,
+    };
+  } catch (e) {
+    diag('check-updates error: ' + e.message);
+    return { status: 'error', current, error: e.message };
+  }
+});
+
+// Ouvre une URL externe dans le navigateur (https uniquement, par sécurité).
+ipcMain.handle('open-external', (_e, url) => {
+  if (typeof url === 'string' && /^https:\/\//i.test(url)) shell.openExternal(url);
 });
 
 // ---------------------------------------------------------------------------

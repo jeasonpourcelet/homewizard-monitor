@@ -477,6 +477,9 @@ async function init() {
   // Widget barre des tâches.
   $('btn-tray-save').addEventListener('click', saveTraySettings);
 
+  // Vérification des mises à jour.
+  $('btn-update').addEventListener('click', checkForUpdates);
+
   // Premier lancement (aucun appareil) : ouvrir le Guide de démarrage.
   if (!selected.length) switchView('guide');
 }
@@ -497,6 +500,43 @@ async function saveTraySettings() {
   await window.hwm.setTrayMetric(tm);
   $('tray-status').textContent = ' ✅ Indicateur appliqué';
   setTimeout(() => ($('tray-status').textContent = ''), 2500);
+}
+
+// --------------------------------------------------------------------------
+// Vérification des mises à jour (compare à la dernière GitHub Release)
+// --------------------------------------------------------------------------
+async function checkForUpdates() {
+  const btn = $('btn-update');
+  const status = $('update-status');
+  btn.disabled = true;
+  status.classList.remove('update-ok');
+  status.textContent = 'Vérification…';
+  let r;
+  try {
+    r = await window.hwm.checkUpdates();
+  } catch {
+    r = { status: 'error' };
+  }
+  btn.disabled = false;
+
+  if (r.status === 'update') {
+    status.innerHTML =
+      `🔆 Version ${r.latest} disponible (vous avez ${r.current}). ` +
+      `<a href="#" id="dl-update" class="link">Télécharger</a>`;
+    const dl = $('dl-update');
+    if (dl)
+      dl.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.hwm.openExternal(r.url);
+      });
+  } else if (r.status === 'uptodate') {
+    status.classList.add('update-ok');
+    status.textContent = `✅ Vous êtes à jour (v${r.current})`;
+  } else if (r.status === 'none') {
+    status.textContent = `Aucune version publiée (actuelle : v${r.current})`;
+  } else {
+    status.textContent = '⚠️ Échec de la vérification (réseau ?)';
+  }
 }
 
 init();
