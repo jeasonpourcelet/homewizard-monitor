@@ -12,9 +12,9 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.0"
     CODE_SIGN_STYLE: Automatic
-    # Set your signing team in Xcode (Signing & Capabilities) after generating,
-    # or uncomment and fill in:
-    # DEVELOPMENT_TEAM: XXXXXXXXXX
+    # Stable signing identity (free Personal Team) — required so the placed
+    # widget tile stays bound across rebuilds and actually refreshes.
+    DEVELOPMENT_TEAM: J7LJJ65X8B
 
 targets:
   HomeWizardWidget:
