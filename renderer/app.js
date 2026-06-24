@@ -480,8 +480,44 @@ async function init() {
   // Vérification des mises à jour.
   $('btn-update').addEventListener('click', checkForUpdates);
 
+  // Widget de bureau macOS : section visible uniquement sur Mac.
+  if (window.hwm.platform === 'darwin') {
+    const wp = $('widget-mac-panel');
+    if (wp) wp.hidden = false;
+    const wb = $('btn-widget-activate');
+    if (wb) wb.addEventListener('click', activateWidget);
+  }
+
   // Premier lancement (aucun appareil) : ouvrir le Guide de démarrage.
   if (!selected.length) switchView('guide');
+}
+
+// --------------------------------------------------------------------------
+// Widget de bureau macOS
+// --------------------------------------------------------------------------
+async function activateWidget() {
+  const btn = $('btn-widget-activate');
+  const status = $('widget-activate-status');
+  btn.disabled = true;
+  status.classList.remove('update-ok');
+  status.textContent = 'Activation…';
+  let r;
+  try {
+    r = await window.hwm.widgetActivate();
+  } catch {
+    r = { ok: false };
+  }
+  btn.disabled = false;
+  if (r.ok) {
+    status.classList.add('update-ok');
+    status.textContent =
+      '✅ Widget enregistré. Ajoute-le : clic droit sur le bureau → Modifier les widgets → « Home Wizard ».';
+  } else if (r.reason === 'not-installed') {
+    status.textContent =
+      "⚠️ Widget pas encore installé : il se construit depuis les sources (dossier widget-mac/, voir le README).";
+  } else {
+    status.textContent = '⚠️ Activation impossible (' + (r.reason || 'erreur') + ').';
+  }
 }
 
 // --------------------------------------------------------------------------

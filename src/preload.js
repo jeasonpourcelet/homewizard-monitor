@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('hwm', {
   probeWithToken: (ip, token) => ipcRenderer.invoke('probe-with-token', ip, token),
   checkUpdates: () => ipcRenderer.invoke('check-updates'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  platform: process.platform,
+  widgetActivate: () => ipcRenderer.invoke('widget-activate'),
   onState: (cb) => ipcRenderer.on('state-update', (_e, snap) => cb(snap)),
   onPairProgress: (cb) => ipcRenderer.on('pair-progress', (_e, p) => cb(p)),
   reportError: (msg) => ipcRenderer.send('renderer-error', msg),

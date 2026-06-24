@@ -526,6 +526,16 @@ ipcMain.handle('open-external', (_e, url) => {
   if (typeof url === 'string' && /^https:\/\//i.test(url)) shell.openExternal(url);
 });
 
+// macOS : (ré)active le widget de bureau en lançant son app hôte (agent invisible),
+// ce qui (ré)enregistre l'extension et rafraîchit les tuiles.
+ipcMain.handle('widget-activate', async () => {
+  if (!isMac) return { ok: false, reason: 'macos-only' };
+  const appPath = '/Applications/HomeWizardWidget.app';
+  if (!fs.existsSync(appPath)) return { ok: false, reason: 'not-installed' };
+  const err = await shell.openPath(appPath);
+  return err ? { ok: false, reason: err } : { ok: true };
+});
+
 // ---------------------------------------------------------------------------
 // Cycle de vie
 // ---------------------------------------------------------------------------
