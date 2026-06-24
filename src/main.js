@@ -282,7 +282,7 @@ function updateTrayIcon(snapshot) {
   const fg = tm.type === 'soc' ? [52, 211, 153] : tm.type === 'flow' ? [56, 189, 248] : [245, 158, 11];
   try {
     const img = nativeImage.createFromBuffer(
-      renderValueIcon(text, isMac ? { template: true, size: 44, fill: 0.6 } : { fg })
+      renderValueIcon(text, isMac ? { template: true, scale: 3, padX: 3, padY: 8 } : { fg })
     );
     if (isMac) img.setTemplateImage(true);
     tray.setImage(img);
