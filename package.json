@@ -76,7 +76,7 @@
     "mac": {
       "icon": "assets/icon.png",
       "category": "public.app-category.utilities",
-      "identity": null,
+      "hardenedRuntime": false,
       "target": [
         {
           "target": "dmg",

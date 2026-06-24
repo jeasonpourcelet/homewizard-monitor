@@ -49,7 +49,12 @@ enum EnergyLoader {
                                   gridPower: nil, solarPower: nil, gasM3: nil, anyOnline: false)
 
         if let ts = root["updatedAt"] as? String {
-            snap.updatedAt = ISO8601DateFormatter().date(from: ts)
+            // The timestamp includes milliseconds (…:09.325Z); the default
+            // ISO8601 parser rejects fractional seconds, so enable that option
+            // (with a plain fallback just in case).
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            snap.updatedAt = f.date(from: ts) ?? ISO8601DateFormatter().date(from: ts)
         }
 
         let devices = (root["devices"] as? [[String: Any]]) ?? []

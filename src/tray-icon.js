@@ -50,20 +50,23 @@ function buildGrid(text) {
  * template = macOS template image: pixels are pure black (only alpha matters,
  *   macOS recolors them to fit the menu bar) and the contrast outline is dropped.
  */
-function renderValueIcon(text, { fg = [255, 255, 255], outline = [10, 14, 20], template = false } = {}) {
+// `size` = output canvas (square, for a system-like rounded highlight).
+// `fill` = fraction of the canvas the text occupies (smaller = lighter glyph).
+function renderValueIcon(text, { fg = [255, 255, 255], outline = [10, 14, 20], template = false, size = SIZE, fill = 0.86 } = {}) {
   if (template) fg = [0, 0, 0];
+  const S = size;
   const { grid, gridW, gridH } = buildGrid(text || '');
-  const pad = 2;
-  const scale = Math.max(1, Math.min(Math.floor((SIZE - 2 * pad) / gridW), Math.floor((SIZE - 2 * pad) / gridH)));
+  const usable = Math.max(1, Math.round(S * fill));
+  const scale = Math.max(1, Math.min(Math.floor(usable / gridW), Math.floor(usable / gridH)));
   const drawW = gridW * scale;
   const drawH = gridH * scale;
-  const offX = Math.floor((SIZE - drawW) / 2);
-  const offY = Math.floor((SIZE - drawH) / 2);
+  const offX = Math.floor((S - drawW) / 2);
+  const offY = Math.floor((S - drawH) / 2);
 
   // 1 = foreground pixel, 2 = outline pixel
-  const px = Array.from({ length: SIZE }, () => new Array(SIZE).fill(0));
+  const px = Array.from({ length: S }, () => new Array(S).fill(0));
   const setFg = (x, y) => {
-    if (x >= 0 && x < SIZE && y >= 0 && y < SIZE) px[y][x] = 1;
+    if (x >= 0 && x < S && y >= 0 && y < S) px[y][x] = 1;
   };
   for (let gy = 0; gy < gridH; gy++) {
     for (let gx = 0; gx < gridW; gx++) {
@@ -75,14 +78,14 @@ function renderValueIcon(text, { fg = [255, 255, 255], outline = [10, 14, 20], t
   // Outline: any empty pixel touching a foreground pixel. Skipped for template
   // images (a contrast halo makes no sense when macOS recolors the glyph).
   if (!template)
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
       if (px[y][x] !== 0) continue;
       let near = false;
       for (let dy = -1; dy <= 1 && !near; dy++)
         for (let dx = -1; dx <= 1; dx++) {
           const nx = x + dx, ny = y + dy;
-          if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && px[ny][nx] === 1) {
+          if (nx >= 0 && nx < S && ny >= 0 && ny < S && px[ny][nx] === 1) {
             near = true;
             break;
           }
@@ -92,11 +95,11 @@ function renderValueIcon(text, { fg = [255, 255, 255], outline = [10, 14, 20], t
   }
 
   // Compose RGBA raw scanlines (filter byte 0 per row).
-  const raw = Buffer.alloc(SIZE * (1 + SIZE * 4));
-  for (let y = 0; y < SIZE; y++) {
-    const line = y * (1 + SIZE * 4);
+  const raw = Buffer.alloc(S * (1 + S * 4));
+  for (let y = 0; y < S; y++) {
+    const line = y * (1 + S * 4);
     raw[line] = 0;
-    for (let x = 0; x < SIZE; x++) {
+    for (let x = 0; x < S; x++) {
       let color = [0, 0, 0, 0];
       if (px[y][x] === 1) color = [fg[0], fg[1], fg[2], 255];
       else if (px[y][x] === 2) color = [outline[0], outline[1], outline[2], 255];
@@ -107,7 +110,7 @@ function renderValueIcon(text, { fg = [255, 255, 255], outline = [10, 14, 20], t
       raw[o + 3] = color[3];
     }
   }
-  return encodePng(raw, SIZE, SIZE);
+  return encodePng(raw, S, S);
 }
 
 // Lightning-bolt outline (Feather "zap"), normalized to a 0..1 box.

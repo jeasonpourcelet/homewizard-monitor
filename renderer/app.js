@@ -523,12 +523,37 @@ async function activateWidget() {
 // --------------------------------------------------------------------------
 // Réglage du widget barre des tâches
 // --------------------------------------------------------------------------
+// Indicateurs pertinents selon le type d'appareil (regroupements corrects).
+function trayTypeOptionsFor(serial) {
+  const d = lastDevices.find((x) => x.serial === serial) ||
+            selected.find((x) => x.serial === serial) || {};
+  const opts = [['off', 'Logo (rien)']];
+  if (d.kind === 'battery' || d.kind === 'batteries') {
+    opts.push(['soc', '% batterie'], ['power', 'Puissance']);
+  } else if (d.kind === 'water') {
+    opts.push(['flow', 'Débit eau']);
+  } else if (d.kind === 'gas') {
+    // Gaz : index horaire, pas de valeur instantanée → logo seul.
+  } else {
+    opts.push(['power', 'Puissance']); // P1, kWh, prise, etc.
+  }
+  return opts;
+}
+
+function refreshTrayTypeOptions(keepValue) {
+  const sel = $('tray-type');
+  const opts = trayTypeOptionsFor($('tray-device').value);
+  sel.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  sel.value = opts.some(([v]) => v === keepValue) ? keepValue : 'off';
+}
+
 async function populateTraySettings() {
   const devSel = $('tray-device');
   devSel.innerHTML = selected.map((d) => `<option value="${d.serial}">${d.label}</option>`).join('');
   const tm = await window.hwm.getTrayMetric();
   if (tm && tm.serial) devSel.value = tm.serial;
-  $('tray-type').value = (tm && tm.type) || 'off';
+  refreshTrayTypeOptions(tm && tm.type);
+  devSel.onchange = () => refreshTrayTypeOptions();
 }
 
 async function saveTraySettings() {

@@ -67,9 +67,7 @@ struct HWMWidgetView: View {
     private var header: some View {
         HStack(spacing: 6) {
             Image("Logo").resizable().scaledToFit()
-                .frame(width: 16, height: 16)
-                .padding(3)
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                .frame(width: 15, height: 15)
             Text("Home Wizard").font(.caption).bold().foregroundStyle(.primary)
             Spacer()
             if entry.stale {
