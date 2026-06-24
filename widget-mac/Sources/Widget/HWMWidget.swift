@@ -52,7 +52,12 @@ struct HWMWidgetView: View {
     @Environment(\.widgetFamily) var family
     let entry: EnergyEntry
 
+    // Tapping the widget opens HomeWizard Monitor (the Electron app) via its URL scheme.
     var body: some View {
+        content.widgetURL(URL(string: "homewizardmonitor://open"))
+    }
+
+    @ViewBuilder private var content: some View {
         switch family {
         case .systemSmall: small
         default: medium
@@ -61,8 +66,11 @@ struct HWMWidgetView: View {
 
     private var header: some View {
         HStack(spacing: 6) {
-            Image("Logo").resizable().scaledToFit().frame(width: 15, height: 15)
-            Text("Home Wizard").font(.caption).bold().foregroundStyle(.secondary)
+            Image("Logo").resizable().scaledToFit()
+                .frame(width: 16, height: 16)
+                .padding(3)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 6))
+            Text("Home Wizard").font(.caption).bold().foregroundStyle(.primary)
             Spacer()
             if entry.stale {
                 Image(systemName: "wifi.slash").font(.caption2).foregroundStyle(.orange)

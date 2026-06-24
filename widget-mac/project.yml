@@ -28,7 +28,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.homewizard-monitor.widget
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Home Wizard
-        INFOPLIST_KEY_LSUIElement: NO
+        INFOPLIST_KEY_LSUIElement: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: Sources/App/HomeWizardWidget.entitlements
     dependencies:

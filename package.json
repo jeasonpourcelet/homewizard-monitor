@@ -42,6 +42,14 @@
   "build": {
     "appId": "io.github.homewizard-monitor",
     "productName": "HomeWizard Monitor",
+    "protocols": [
+      {
+        "name": "HomeWizard Monitor",
+        "schemes": [
+          "homewizardmonitor"
+        ]
+      }
+    ],
     "files": [
       "src/**/*",
       "renderer/**/*",

@@ -536,6 +536,13 @@ if (!singleLock) {
 } else {
   app.on('second-instance', showWindow);
 
+  // Custom URL scheme so the macOS widget (and links) can open the dashboard.
+  app.setAsDefaultProtocolClient('homewizardmonitor');
+  app.on('open-url', (e) => {
+    e.preventDefault();
+    showWindow();
+  });
+
   app.whenReady().then(() => {
     diag('whenReady: userData=' + app.getPath('userData'));
     store = new Store(path.join(app.getPath('userData'), 'data'));
