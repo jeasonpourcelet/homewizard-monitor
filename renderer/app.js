@@ -209,6 +209,72 @@ function cardBatteries(d) {
   </div>`;
 }
 
+// --------------------------------------------------------------------------
+// Vue « maison » agrégée : conso nette du foyer = réseau − solaire − batterie.
+// Conventions (W) : réseau + = import / − = export ; solaire − = production ;
+// batterie + = charge / − = décharge. → charge maison = grid − solar − battery.
+// --------------------------------------------------------------------------
+function computeHome(devices) {
+  let grid = 0, solar = 0, battery = 0;
+  let hasGrid = false, hasSolar = false, hasBattery = false;
+  for (const d of devices) {
+    if (!d.online || d.powerW == null) continue;
+    if (d.role === 'grid') { grid += d.powerW; hasGrid = true; }
+    else if (d.role === 'solar' || d.role === 'energy') { solar += d.powerW; hasSolar = true; }
+    else if (d.kind === 'battery' || d.kind === 'batteries') { battery += d.powerW; hasBattery = true; }
+  }
+  if (!hasGrid) return null; // the P1/grid meter is required for a meaningful net
+  return { load: grid - solar - battery, grid, solar, battery, hasGrid, hasSolar, hasBattery };
+}
+
+// Sparkline of the home load, combining each device's recent live values.
+function homeSpark(devices) {
+  const grid = devices.find((d) => d.role === 'grid');
+  const solars = devices.filter((d) => d.role === 'solar' || d.role === 'energy');
+  const bats = devices.filter((d) => d.kind === 'battery' || d.kind === 'batteries');
+  if (!grid || !grid.spark || grid.spark.length < 2) return [];
+  const series = [grid, ...solars, ...bats].filter((d) => d.spark && d.spark.length);
+  const n = Math.min(...series.map((d) => d.spark.length));
+  const at = (d, i) => d.spark[d.spark.length - n + i];
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    let v = at(grid, i);
+    for (const s of solars) if (s.spark && s.spark.length >= n) v -= at(s, i);
+    for (const b of bats) if (b.spark && b.spark.length >= n) v -= at(b, i);
+    out.push(v);
+  }
+  return out;
+}
+
+function renderHomeCard(devices) {
+  const h = computeHome(devices);
+  if (!h) return '';
+  const p = fmtPower(Math.abs(h.load));
+  const importing = h.load >= 0;
+  const cls = importing ? 'c-import' : 'c-export';
+  const label = importing ? t('home_consumption') : t('home_export');
+  const color = importing ? COL.import : COL.export;
+  const part = (icon, name, w, signed) => {
+    const f = fmtPower(signed ? w : Math.abs(w));
+    const val = (signed && w > 0 ? '+' : '') + f.val + (f.unit ? ' ' + f.unit : '');
+    return `<span class="hb">${icon} ${name} <b>${val}</b></span>`;
+  };
+  const bits = [];
+  if (h.hasGrid) bits.push(part('⚡', t('home_grid'), h.grid, true));
+  if (h.hasSolar) bits.push(part('☀️', t('home_solar'), -h.solar, false));
+  if (h.hasBattery) bits.push(part('🔋', t('home_battery'), h.battery, true));
+  return `<div class="card home">
+    <div class="card-top">
+      <div class="card-main">
+        <div class="value">${valHtml(p.val, p.unit, cls)}</div>
+        <div class="dname">🏠 ${t('home_title')} <span class="muted">· ${label}</span></div>
+        <div class="home-breakdown">${bits.join('')}</div>
+      </div>
+    </div>
+    <div class="spark">${sparklineSVG(homeSpark(devices), color)}</div>
+  </div>`;
+}
+
 function renderCards(snapshot) {
   lastDevices = snapshot.devices || [];
   const c = $('cards');
@@ -216,7 +282,7 @@ function renderCards(snapshot) {
     c.innerHTML = `<div class="card"><p class="muted">${t('no_devices_overview')}</p></div>`;
     return;
   }
-  c.innerHTML = lastDevices.map(renderCard).join('');
+  c.innerHTML = renderHomeCard(lastDevices) + lastDevices.map(renderCard).join('');
 
   // Met à jour le sélecteur d'historique.
   const sel = $('hist-device');

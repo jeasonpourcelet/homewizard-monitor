@@ -143,7 +143,7 @@ within 30 s — the app stores the token.
 - [x] macOS support (menu-bar app + native WidgetKit desktop widget)
 - [x] In-app update check (GitHub releases)
 - [x] Multilingual UI — English / French / Dutch
-- [ ] Aggregated "home" view (net = grid + solar ± battery)
+- [x] Aggregated "home" view (net = grid − solar − battery)
 - [ ] Configurable poll interval & per-device labels in the UI
 
 ## 🤝 Contributing
