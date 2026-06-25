@@ -1,6 +1,6 @@
 {
   "name": "homewizard-monitor",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Menu-bar / tray app + dashboard for HomeWizard Energy (Windows & macOS): real-time power (grid / solar / battery / sockets), water & gas. 100% local API, no cloud.",
   "main": "src/main.js",
   "author": "Jeason",

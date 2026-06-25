@@ -388,6 +388,13 @@ ipcMain.on('renderer-error', (_e, msg) => diag('RENDERER: ' + msg));
 ipcMain.on('get-i18n', (e) => {
   e.returnValue = { locale: currentLocale, strings: mergedStrings(currentLocale) };
 });
+ipcMain.handle('set-poll-interval', (_e, ms) => {
+  const v = Math.max(1000, Math.min(60000, Math.round(Number(ms) || 2000)));
+  store.config.pollIntervalMs = v;
+  store.saveConfig();
+  startPolling();
+  return v;
+});
 ipcMain.handle('set-locale', (_e, loc) => {
   applyLocale(loc);
   if (store) { store.config.locale = currentLocale; store.saveConfig(); }

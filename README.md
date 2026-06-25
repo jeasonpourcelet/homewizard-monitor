@@ -144,7 +144,7 @@ within 30 s — the app stores the token.
 - [x] In-app update check (GitHub releases)
 - [x] Multilingual UI — English / French / Dutch
 - [x] Aggregated "home" view (net = grid − solar − battery)
-- [ ] Configurable poll interval & per-device labels in the UI
+- [x] Configurable poll interval & per-device labels in the UI
 
 ## 🤝 Contributing
 

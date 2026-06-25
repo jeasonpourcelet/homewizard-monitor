@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('hwm', {
   getLive: (serial) => ipcRenderer.invoke('get-live', serial),
   getTrayMetric: () => ipcRenderer.invoke('get-tray-metric'),
   setTrayMetric: (tm) => ipcRenderer.invoke('set-tray-metric', tm),
+  setPollInterval: (ms) => ipcRenderer.invoke('set-poll-interval', ms),
   pairDevice: (ip) => ipcRenderer.invoke('pair-device', ip),
   probeWithToken: (ip, token) => ipcRenderer.invoke('probe-with-token', ip, token),
   checkUpdates: () => ipcRenderer.invoke('check-updates'),

@@ -17,6 +17,10 @@ function t(key, vars) {
   if (vars) for (const k in vars) s = s.split('{' + k + '}').join(String(vars[k]));
   return s;
 }
+function escAttr(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 function applyStatic() {
   const loc = (window.hwm && window.hwm.locale) || 'en';
   document.documentElement.lang = loc;
@@ -366,7 +370,8 @@ function renderSelected() {
       return `<div class="dev-wrap">
         <div class="dev">
           <span style="font-size:18px">${roleIcon(d.role)}</span>
-          <div class="meta"><div class="name">${d.label}</div>
+          <div class="meta">
+            <input class="dev-label-input" data-i="${i}" value="${escAttr(d.label || '')}" title="${t('rename_hint')}" />
             <div class="sub">${d.ip} · ${d.productType || ''} · ${d.serial || ''}</div></div>
           <button class="rm" data-i="${i}" title="${t('remove')}">✕</button>
         </div>
@@ -382,6 +387,14 @@ function renderSelected() {
   );
   el.querySelectorAll('.pair-btn').forEach((b) =>
     b.addEventListener('click', () => pairFlow(Number(b.dataset.i)))
+  );
+  // Inline rename — updates the in-memory label; persisted on Save (no re-render
+  // here so the field keeps focus while typing).
+  el.querySelectorAll('.dev-label-input').forEach((inp) =>
+    inp.addEventListener('input', () => {
+      const i = Number(inp.dataset.i);
+      if (selected[i]) selected[i].label = inp.value;
+    })
   );
 }
 
@@ -539,6 +552,13 @@ async function init() {
   const cfg = await window.hwm.getConfig();
   selected = (cfg.devices || []).map((d) => ({ ...d }));
   renderSelected();
+
+  // Refresh-interval selector (applies immediately).
+  const pi = $('poll-interval');
+  if (pi) {
+    pi.value = String(cfg.pollIntervalMs || 2000);
+    pi.addEventListener('change', () => window.hwm.setPollInterval(Number(pi.value)));
+  }
 
   const snap = await window.hwm.getState();
   renderCards(snap);
