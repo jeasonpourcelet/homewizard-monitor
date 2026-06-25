@@ -142,9 +142,9 @@ within 30 s — the app stores the token.
 - [x] `.exe` + `.dmg` packaging, start-at-login, CI release (Windows + macOS)
 - [x] macOS support (menu-bar app + native WidgetKit desktop widget)
 - [x] In-app update check (GitHub releases)
+- [x] Multilingual UI — English / French / Dutch
 - [ ] Aggregated "home" view (net = grid + solar ± battery)
 - [ ] Configurable poll interval & per-device labels in the UI
-- [ ] English / i18n
 
 ## 🤝 Contributing
 
