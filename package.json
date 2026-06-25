@@ -1,7 +1,7 @@
 {
   "name": "homewizard-monitor",
-  "version": "1.0.0",
-  "description": "Windows tray app + dashboard for HomeWizard Energy: real-time power (grid / solar / battery / sockets), water & gas, with locally-built day/month history. 100% local API, no cloud.",
+  "version": "1.1.0",
+  "description": "Menu-bar / tray app + dashboard for HomeWizard Energy (Windows & macOS): real-time power (grid / solar / battery / sockets), water & gas. 100% local API, no cloud.",
   "main": "src/main.js",
   "author": "Jeason",
   "license": "MIT",

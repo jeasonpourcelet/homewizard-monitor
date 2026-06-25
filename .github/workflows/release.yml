@@ -1,0 +1,58 @@
+name: Release
+
+# Build the Windows (.exe) and macOS (.dmg) installers on their native runners
+# and attach them to the GitHub Release for the pushed tag (e.g. v1.1.0).
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            build: build:mac
+            files: dist/*.dmg
+          - os: windows-latest
+            build: build
+            files: |
+              dist/*.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Repair Electron if needed (macOS extract-zip workaround)
+        if: runner.os == 'macOS'
+        run: node -e "require('electron')" || bash scripts/fix-electron-macos.sh
+
+      - name: Generate icons
+        run: npm run icons
+
+      - name: Build installer
+        run: npm run ${{ matrix.build }}
+        env:
+          # No code-signing on CI (apps are distributed unsigned).
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.files }}
+          fail_on_unmatched_files: true
+          draft: false
+          generate_release_notes: true

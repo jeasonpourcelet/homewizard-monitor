@@ -1,17 +1,25 @@
 # HomeWizard Monitor
 
-A lightweight **Windows tray app + dashboard** for [HomeWizard Energy](https://www.homewizard.com/) devices.
-Glance at your live power from the taskbar (like a weather widget), click for a full dashboard with
-real-time values and live charts — **100% local, no cloud account required**.
-Includes a built-in **onboarding guide** so non-technical users can set it up alone.
+A lightweight **menu-bar / tray app + dashboard** for [HomeWizard Energy](https://www.homewizard.com/)
+devices, on **Windows and macOS**. Glance at your live power from the menu bar (like a weather widget),
+click for a full dashboard with real-time values and live charts — **100% local, no cloud account
+required**. Includes a built-in **onboarding guide** so non-technical users can set it up alone.
 
 > The desktop UI is currently in **French**. Contributions to internationalize it are welcome.
+
+![Dashboard — live overview](assets/screenshots/dashboard.png)
+
+<p align="center">
+  <img src="assets/screenshots/charts.png" width="49%" alt="Live charts" />
+  <img src="assets/screenshots/data.png" width="49%" alt="Raw data per device" />
+</p>
 
 ---
 
 ## ✨ Features
 
-- **Taskbar (tray) icon** — hover for a live tooltip of every device; click to open the dashboard.
+- **Menu-bar / tray icon** — hover for a live tooltip of every device; click to open the dashboard.
+  On macOS the icon is a system-style template glyph and can show a live value (e.g. battery %).
 - **Real-time dashboard** — HomeWizard-style cards: big value + live area sparkline, with battery
   **state of charge %**, charge/discharge power, grid, solar, water flow, gas.
 - **Live charts** — instant consumption per device (the local API keeps no history, so historical
@@ -19,9 +27,13 @@ Includes a built-in **onboarding guide** so non-technical users can set it up al
 - **In-app onboarding Guide** — first-run tab with the exact steps & gotchas (enable Local API,
   the "disable pairing button" trap, pairing sequence, troubleshooting).
 - **Raw data tab** — every field returned by each device's API, for diagnostics.
-- **Configurable taskbar indicator** — render a chosen value (e.g. battery %) on the tray icon.
+- **Configurable menu-bar indicator** — render a chosen value (e.g. battery %) on the icon; the
+  available metrics are filtered per device type.
+- **Built-in update check** — compares your version to the latest GitHub release and offers the download.
 - **Auto-discovery** (mDNS + LAN subnet scan) **or** manual IP entry; **DHCP self-healing** by serial.
-- **Start with Windows** (tray menu toggle), packaged `.exe`, and a **Windows 11 Widget** (MSIX).
+- **Start at login** (tray menu toggle), packaged installers (`.dmg` / `.exe`).
+- **Desktop widgets** — a **Windows 11 Widget** (MSIX) and a native **macOS WidgetKit** widget
+  (`widget-mac/`) showing live energy on the desktop / Notification Center.
 - No telemetry, no cloud calls — talks only to your devices on your LAN.
 
 ## 🔌 Supported devices
@@ -52,15 +64,25 @@ All HomeWizard Wi-Fi devices that expose the local API:
   each cumulative counter and its value at the start of the period. History therefore builds up from the
   moment you install the app.
 - All data is stored locally as JSON under Electron's `userData` folder
-  (`%APPDATA%/HomeWizard Monitor/data/` on Windows). Nothing is uploaded anywhere.
+  (`%APPDATA%/HomeWizard Monitor/data/` on Windows, `~/Library/Application Support/homewizard-monitor/data/`
+  on macOS). Nothing is uploaded anywhere.
 
 ## ✅ Requirements
 
-- Windows 10/11 (the tray + autostart + `.exe` packaging target Windows; the code is Electron and could
-  be adapted to macOS/Linux).
-- [Node.js](https://nodejs.org/) 20+ to run from source or build.
-- The PC must be on the **same network** as the HomeWizard devices, and the **Local API** must be enabled
-  in the HomeWizard mobile app (per device: *Settings → Meter / Device → Local API*).
+- **Windows 10/11** or **macOS 12+** (Apple Silicon; the published `.dmg` is arm64).
+- The computer must be on the **same network** as the HomeWizard devices, and the **Local API** must be
+  enabled in the HomeWizard mobile app (per device: *Settings → Meter / Device → Local API*).
+- [Node.js](https://nodejs.org/) 20+ only if you run from source or build.
+
+## 📥 Download & install
+
+Grab the latest installer from the [**Releases**](https://github.com/jeasonpourcelet/homewizard-monitor/releases) page:
+
+- **Windows** — `HomeWizard Monitor Setup <version>.exe` (installer) or `HomeWizard-Monitor-portable.exe`
+  (no install). The apps are unsigned, so SmartScreen may warn → *More info → Run anyway*.
+- **macOS** (Apple Silicon) — `HomeWizard Monitor-<version>-arm64.dmg`: open it, drag the app into
+  **Applications**. Unsigned, so at first launch **right-click → Open** (or *System Settings → Privacy &
+  Security → Open anyway*).
 
 ## 🚀 Run from source
 
@@ -72,29 +94,17 @@ npm run icons   # generate tray + app icons
 npm start
 ```
 
-## 📦 Build a Windows .exe
+## 📦 Build installers
 
 ```bash
-npm run build   # -> dist/HomeWizard-Monitor-portable.exe + an NSIS installer
+npm run build       # Windows: dist/HomeWizard-Monitor-portable.exe + NSIS installer
+npm run build:mac   # macOS:  dist/HomeWizard Monitor-<version>-arm64.dmg
 ```
 
-- **Portable**: `dist/HomeWizard-Monitor-portable.exe` — double-click, no install.
-- **Installer**: `dist/HomeWizard Monitor Setup <version>.exe` — desktop + start-menu shortcuts.
-
-<details>
-<summary>Build fails on <code>winCodeSign</code> symbolic-link extraction?</summary>
-
-On Windows without Developer Mode / admin, electron-builder can fail extracting `winCodeSign-*.7z`
-(it contains macOS symlinks). Pre-extract it once, tolerating the 2 symlink errors, then rebuild:
-
-```powershell
-$cache  = "$env:LOCALAPPDATA\electron-builder\Cache\winCodeSign"
-$target = Join-Path $cache "winCodeSign-2.6.0"
-& ".\node_modules\7zip-bin\win\x64\7za.exe" x -snld -bd -y "-o$target" (Get-ChildItem $cache -Filter *.7z)[0].FullName
-$env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
-npm run build
-```
-</details>
+Each platform is built on its own OS. Cross-building Windows from macOS needs Wine and is unreliable on
+Apple Silicon — releases are produced by the GitHub Actions workflow (`.github/workflows/release.yml`),
+which builds both on a tag push. To sign the macOS build with your own Apple Development certificate
+(so the one-time data-access prompt persists), set `CSC_NAME="Apple Development: …"` before `build:mac`.
 
 ## ⚙️ First-time setup
 
@@ -127,7 +137,9 @@ within 30 s — the app stores the token.
 - [x] All HomeWizard local-API device types
 - [x] Battery (v2 + pairing), water, gas
 - [x] DHCP self-healing by serial
-- [x] `.exe` packaging + start-with-Windows
+- [x] `.exe` + `.dmg` packaging, start-at-login, CI release (Windows + macOS)
+- [x] macOS support (menu-bar app + native WidgetKit desktop widget)
+- [x] In-app update check (GitHub releases)
 - [ ] Aggregated "home" view (net = grid + solar ± battery)
 - [ ] Configurable poll interval & per-device labels in the UI
 - [ ] English / i18n
