@@ -7,8 +7,20 @@ const https = require('node:https');
 const hw = require('./homewizard');
 const { Store } = require('./store');
 const { renderValueIcon } = require('./tray-icon');
+const { STRINGS, makeT, pickLocale } = require('./i18n');
 
 const isMac = process.platform === 'darwin';
+
+// i18n — locale resolved once the store is loaded (config override or system).
+let currentLocale = 'en';
+let t = makeT('en');
+function applyLocale(loc) {
+  currentLocale = pickLocale(loc);
+  t = makeT(currentLocale);
+}
+function mergedStrings(loc) {
+  return { ...STRINGS.en, ...(STRINGS[pickLocale(loc)] || {}) };
+}
 
 // Journal de diagnostic (le stderr d'Electron n'est pas toujours capturé).
 const DIAG = path.join(require('node:os').tmpdir(), 'hwm-diag.log');
@@ -102,6 +114,7 @@ async function pollOnce() {
 function writeLatest(snapshot) {
   const out = {
     updatedAt: snapshot.updatedAt,
+    locale: currentLocale,
     devices: snapshot.devices.map((d) => ({
       serial: d.serial, label: d.label, kind: d.kind, role: d.role, online: !!d.online,
       powerW: d.powerW ?? null, socPct: d.socPct ?? null, mode: d.mode ?? null,
@@ -242,7 +255,7 @@ function updateTrayTooltip(snapshot) {
       parts.push(`${icon} ${d.label}: ${fmtW(d.powerW)}`);
     }
   }
-  const tip = parts.length ? parts.join('\n') : 'HomeWizard — aucun appareil configuré';
+  const tip = parts.length ? parts.join('\n') : t('tray_tooltip_none');
   tray.setToolTip('HomeWizard Monitor\n' + tip);
 }
 
@@ -306,17 +319,17 @@ function setAutoLaunch(enabled) {
 
 function buildTrayMenu() {
   return Menu.buildFromTemplate([
-    { label: 'Ouvrir le dashboard', click: showWindow },
-    { label: 'Actualiser maintenant', click: () => pollOnce() },
+    { label: t('tray_open'), click: showWindow },
+    { label: t('tray_refresh'), click: () => pollOnce() },
     { type: 'separator' },
     {
-      label: isMac ? 'Ouvrir au démarrage' : 'Démarrer avec Windows',
+      label: t('tray_autostart'),
       type: 'checkbox',
       checked: isAutoLaunch(),
       click: (item) => setAutoLaunch(item.checked),
     },
     { type: 'separator' },
-    { label: 'Quitter', click: () => { app.isQuitting = true; app.quit(); } },
+    { label: t('tray_quit'), click: () => { app.isQuitting = true; app.quit(); } },
   ]);
 }
 
@@ -370,6 +383,18 @@ function showWindow() {
 // IPC
 // ---------------------------------------------------------------------------
 ipcMain.on('renderer-error', (_e, msg) => diag('RENDERER: ' + msg));
+
+// i18n: preload reads this synchronously at load to localise static text.
+ipcMain.on('get-i18n', (e) => {
+  e.returnValue = { locale: currentLocale, strings: mergedStrings(currentLocale) };
+});
+ipcMain.handle('set-locale', (_e, loc) => {
+  applyLocale(loc);
+  if (store) { store.config.locale = currentLocale; store.saveConfig(); }
+  if (tray) { tray.setContextMenu(buildTrayMenu()); updateTrayTooltip(lastSnapshot); }
+  if (win && !win.isDestroyed()) win.webContents.reload();
+  return currentLocale;
+});
 ipcMain.handle('get-state', () => lastSnapshot);
 ipcMain.handle('get-config', () => store.config);
 function localSubnetBases() {
@@ -559,6 +584,8 @@ if (!singleLock) {
     diag('whenReady: userData=' + app.getPath('userData'));
     store = new Store(path.join(app.getPath('userData'), 'data'));
     diag('store OK, devices=' + store.getDevices().length);
+    applyLocale(store.config.locale || app.getLocale());
+    diag('locale=' + currentLocale);
     createTray();
     diag('tray OK');
     createWindow();

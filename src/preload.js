@@ -2,7 +2,13 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Resolved synchronously at preload time so static text can be localised on load.
+const i18n = ipcRenderer.sendSync('get-i18n'); // { locale, strings }
+
 contextBridge.exposeInMainWorld('hwm', {
+  locale: i18n.locale,
+  i18n: i18n.strings,
+  setLocale: (l) => ipcRenderer.invoke('set-locale', l),
   getState: () => ipcRenderer.invoke('get-state'),
   getConfig: () => ipcRenderer.invoke('get-config'),
   discover: () => ipcRenderer.invoke('discover'),

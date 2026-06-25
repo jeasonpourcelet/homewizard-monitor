@@ -12,19 +12,24 @@
       <aside class="sidebar">
         <div class="brand">
           <img class="logo" src="../assets/logo.png" alt="HomeWizard Monitor" />
-          <span class="brand-name">HomeWizard<br /><small>Monitor</small></span>
+          <span class="brand-name">HomeWizard<br /><small data-i18n="brand_sub">Monitor</small></span>
         </div>
         <nav class="nav">
-          <button class="nav-item active" data-view="overview"><span>📊</span> Aperçu</button>
-          <button class="nav-item" data-view="charts"><span>📈</span> Graphiques</button>
-          <button class="nav-item" data-view="raw"><span>🧬</span> Données</button>
-          <button class="nav-item" data-view="devices"><span>🔌</span> Appareils</button>
-          <button class="nav-item" data-view="guide"><span>📖</span> Guide</button>
+          <button class="nav-item active" data-view="overview"><span>📊</span> <span data-i18n="nav_overview">Aperçu</span></button>
+          <button class="nav-item" data-view="charts"><span>📈</span> <span data-i18n="nav_charts">Graphiques</span></button>
+          <button class="nav-item" data-view="raw"><span>🧬</span> <span data-i18n="nav_raw">Données</span></button>
+          <button class="nav-item" data-view="devices"><span>🔌</span> <span data-i18n="nav_devices">Appareils</span></button>
+          <button class="nav-item" data-view="guide"><span>📖</span> <span data-i18n="nav_guide">Guide</span></button>
         </nav>
         <div class="sidebar-foot">
-          <p id="updated" class="muted small">En attente…</p>
-          <button id="btn-update" class="secondary wide update-btn">⟳ Vérifier les mises à jour</button>
+          <p id="updated" class="muted small" data-i18n="waiting">En attente…</p>
+          <button id="btn-update" class="secondary wide update-btn" data-i18n="btn_update">⟳ Vérifier les mises à jour</button>
           <p id="update-status" class="muted small"></p>
+          <select id="lang-select" class="select wide" style="margin-top:8px" aria-label="Language">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="nl">Nederlands</option>
+          </select>
         </div>
       </aside>
 
@@ -33,7 +38,7 @@
         <!-- ===== Aperçu ===== -->
         <section id="view-overview" class="view">
           <header class="view-head">
-            <h1>Aperçu en temps réel</h1>
+            <h1 data-i18n="h_overview">Aperçu en temps réel</h1>
           </header>
           <div id="cards" class="cards-grid"></div>
         </section>
@@ -41,13 +46,13 @@
         <!-- ===== Graphique (instantané) ===== -->
         <section id="view-charts" class="view" hidden>
           <header class="view-head">
-            <h1>Consommation en direct</h1>
+            <h1 data-i18n="h_charts">Consommation en direct</h1>
             <select id="hist-device" class="select"></select>
           </header>
           <div class="chart-card">
             <canvas id="chart"></canvas>
           </div>
-          <p class="muted small">
+          <p class="muted small" data-i18n="charts_hint">
             Mesure en temps réel de l'appareil sélectionné (les ~6 dernières minutes).
           </p>
         </section>
@@ -55,8 +60,8 @@
         <!-- ===== Données brutes ===== -->
         <section id="view-raw" class="view" hidden>
           <header class="view-head">
-            <h1>Données brutes de l'API</h1>
-            <span class="muted small">Tous les champs renvoyés par chaque appareil HomeWizard</span>
+            <h1 data-i18n="h_raw">Données brutes de l'API</h1>
+            <span class="muted small" data-i18n="h_raw_sub">Tous les champs renvoyés par chaque appareil HomeWizard</span>
           </header>
           <div id="raw-content" class="raw-grid"></div>
         </section>
@@ -64,14 +69,14 @@
         <!-- ===== Appareils ===== -->
         <section id="view-devices" class="view" hidden>
           <header class="view-head">
-            <h1>Appareils &amp; réglages</h1>
+            <h1 data-i18n="h_devices">Appareils &amp; réglages</h1>
           </header>
           <div class="devices-cols">
             <div class="col-main">
               <div class="panel">
                 <div class="panel-head">
-                  <h2>Appareils suivis</h2>
-                  <button id="btn-discover" class="primary sm">🔍 Découvrir</button>
+                  <h2 data-i18n="tracked_devices">Appareils suivis</h2>
+                  <button id="btn-discover" class="primary sm" data-i18n="btn_discover">🔍 Découvrir</button>
                 </div>
                 <p id="discover-status" class="muted small"></p>
                 <div id="discovered" class="device-list"></div>
@@ -79,10 +84,10 @@
               </div>
 
               <div class="panel">
-                <h3>Ajouter par adresse IP</h3>
+                <h3 data-i18n="add_by_ip">Ajouter par adresse IP</h3>
                 <div class="row">
                   <input id="manual-ip" class="input" placeholder="192.168.1.42" />
-                  <button id="btn-add-ip" class="secondary">Tester &amp; ajouter</button>
+                  <button id="btn-add-ip" class="secondary" data-i18n="btn_add_ip">Tester &amp; ajouter</button>
                 </div>
                 <p id="manual-status" class="muted small"></p>
               </div>
@@ -90,23 +95,18 @@
 
             <div class="col-side">
               <div class="panel">
-                <h3>Indicateur barre des tâches</h3>
-                <p class="muted small">La valeur affichée sur l'icône, comme un widget.</p>
-                <label class="field">Appareil
+                <h3 data-i18n="tray_indicator">Indicateur barre des tâches</h3>
+                <p class="muted small" data-i18n="tray_indicator_hint">La valeur affichée sur l'icône, comme un widget.</p>
+                <label class="field"><span data-i18n="field_device">Appareil</span>
                   <select id="tray-device" class="select wide"></select>
                 </label>
-                <label class="field">Donnée
-                  <select id="tray-type" class="select wide">
-                    <option value="off">Logo (rien)</option>
-                    <option value="soc">% batterie</option>
-                    <option value="power">Puissance</option>
-                    <option value="flow">Débit eau</option>
-                  </select>
+                <label class="field"><span data-i18n="field_metric">Donnée</span>
+                  <select id="tray-type" class="select wide"></select>
                 </label>
-                <button id="btn-tray-save" class="secondary wide">Appliquer</button>
+                <button id="btn-tray-save" class="secondary wide" data-i18n="btn_apply">Appliquer</button>
                 <span id="tray-status" class="muted small"></span>
               </div>
-              <button id="btn-save" class="primary wide">💾 Enregistrer les appareils</button>
+              <button id="btn-save" class="primary wide" data-i18n="btn_save_devices">💾 Enregistrer les appareils</button>
             </div>
           </div>
         </section>
@@ -114,118 +114,15 @@
         <!-- ===== Guide ===== -->
         <section id="view-guide" class="view" hidden>
           <header class="view-head">
-            <h1>Guide de démarrage</h1>
+            <h1 data-i18n="h_guide">Guide de démarrage</h1>
           </header>
-          <div class="guide">
-            <div class="guide-intro panel">
-              <h2>👋 Bienvenue</h2>
-              <p>HomeWizard Monitor lit vos appareils HomeWizard <b>directement sur votre réseau local</b>
-              (Wi-Fi ou Ethernet). Aucun compte, aucun cloud : toutes vos données restent chez vous.</p>
-              <p class="muted small">Suivez les étapes ci-dessous. Comptez 5 minutes pour la première configuration.</p>
-            </div>
-
-            <div class="step panel">
-              <div class="step-no">1</div>
-              <div class="step-body">
-                <h3>Prérequis réseau</h3>
-                <p>Votre PC et vos appareils HomeWizard doivent être sur <b>le même réseau</b>.</p>
-                <ul>
-                  <li>Si vos appareils sont derrière un <b>routeur secondaire</b>, connectez le Wi-Fi du PC à ce routeur (vous pouvez garder l'Ethernet en parallèle).</li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="step panel">
-              <div class="step-no">2</div>
-              <div class="step-body">
-                <h3>Activer l'« API locale » (app HomeWizard sur téléphone)</h3>
-                <p>Pour <b>chaque</b> appareil (P1, batterie, compteur kWh, eau) :</p>
-                <ol>
-                  <li>App <b>HomeWizard Energy</b> → ⚙ Réglages → <b>Compteurs / Appareils</b>.</li>
-                  <li>Sélectionnez l'appareil → activez <b>« API locale »</b>.</li>
-                </ol>
-                <div class="callout warn">
-                  ⚠️ <b>Batterie & compteurs récents</b> : dans la même page, désactivez l'option
-                  <b>« Désactiver le bouton d'appairage »</b>. Sinon le bouton ne répondra pas lors de l'appairage.
-                  <span class="muted">(Astuce : redémarrer l'appareil réactive temporairement le bouton.)</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="step panel">
-              <div class="step-no">3</div>
-              <div class="step-body">
-                <h3>Ajouter vos appareils</h3>
-                <p>Onglet <b>🔌 Appareils</b> :</p>
-                <ul>
-                  <li><b>🔍 Découvrir</b> : scanne votre réseau (~30 s) et liste les appareils trouvés.</li>
-                  <li>Ou <b>Ajouter par IP</b> : l'adresse IP est indiquée dans l'app HomeWizard (section « API locale » de chaque appareil).</li>
-                  <li>Cliquez <b>💾 Enregistrer</b>.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="step panel">
-              <div class="step-no">4</div>
-              <div class="step-body">
-                <h3>Appairer la batterie & les compteurs kWh récents</h3>
-                <p>Ces appareils exigent un jeton de sécurité (bouton « 🔗 Appairer » visible sur leur carte) :</p>
-                <ol>
-                  <li>Onglet Appareils → cliquez <b>🔗 Appairer</b> sur l'appareil. <b>La fenêtre de 30 s démarre.</b></li>
-                  <li><b>Pendant ces 30 s</b>, allez presser le <b>bouton physique</b> de l'appareil (appui court, 1-2 s).</li>
-                </ol>
-                <div class="callout">
-                  💡 <b>L'ordre est crucial</b> : cliquez « Appairer » <b>d'abord</b>, pressez le bouton <b>ensuite</b>.
-                  Si rien ne se passe, revérifiez l'étape 2 (API locale activée + bouton d'appairage non désactivé).
-                </div>
-              </div>
-            </div>
-
-            <div class="step panel">
-              <div class="step-no">5</div>
-              <div class="step-body">
-                <h3>Personnaliser</h3>
-                <ul>
-                  <li>Onglet Appareils → <b>Indicateur barre des tâches</b> : choisissez la valeur affichée sur l'icône (ex. <b>% batterie</b>).</li>
-                  <li>L'app vit dans la barre des tâches : <b>clic</b> = ouvrir, <b>clic droit</b> = menu (Actualiser, « Démarrer avec Windows », Quitter).</li>
-                </ul>
-              </div>
-            </div>
-
-            <div id="widget-mac-panel" class="panel" hidden>
-              <h3>🧩 Widget de bureau (macOS)</h3>
-              <p>Affiche tes valeurs (batterie, réseau, solaire, gaz) directement sur le
-              <b>bureau</b> ou le <b>Centre de notifications</b>, comme un widget natif.</p>
-              <div class="callout">
-                ℹ️ Le widget est une petite app native <b>séparée</b> (« Home Wizard ») —
-                macOS l'exige (un widget ne peut pas vivre dans cette app). Les deux
-                <b>communiquent</b> : HomeWizard Monitor doit tourner pour que le widget
-                affiche des données. <b>Cliquer le widget ouvre HomeWizard Monitor.</b>
-              </div>
-              <ol>
-                <li>Clique <b>« Activer / rafraîchir le widget »</b> ci-dessous (enregistre le widget).</li>
-                <li><b>Clic droit sur le bureau → Modifier les widgets…</b></li>
-                <li>Cherche <b>« Home Wizard »</b> → glisse une tuile sur le bureau.</li>
-              </ol>
-              <button id="btn-widget-activate" class="secondary">🧩 Activer / rafraîchir le widget</button>
-              <p id="widget-activate-status" class="muted small"></p>
-            </div>
-
-            <div class="panel">
-              <h3>🛠️ Dépannage</h3>
-              <ul>
-                <li><b>« Aucun appareil trouvé »</b> : la découverte automatique ne traverse pas certains routeurs. Utilisez <b>Ajouter par IP</b>.</li>
-                <li><b>Appareil « hors ligne »</b> : vérifiez le Wi-Fi et que l'API locale est activée. Le compteur d'eau est sur batterie et ne répond que par intermittence (normal).</li>
-                <li><b>IP qui change</b> : l'app retrouve l'appareil par numéro de série. Pour plus de stabilité, réservez son IP dans votre routeur (DHCP).</li>
-                <li>Onglet <b>🧬 Données</b> : affiche tous les champs bruts de chaque appareil (utile pour diagnostiquer).</li>
-              </ul>
-            </div>
-          </div>
+          <div class="guide" id="guide"></div>
         </section>
       </main>
     </div>
 
     <script src="../node_modules/chart.js/dist/chart.umd.js"></script>
+    <script src="guides.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

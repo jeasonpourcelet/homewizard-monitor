@@ -11,10 +11,34 @@ struct EnergySnapshot {
     var solarPower: Double?     // W
     var gasM3: Double?          // m³
     var anyOnline: Bool
+    var locale: String = "en"   // app language, mirrored in latest.json
 
     static let placeholder = EnergySnapshot(
         updatedAt: nil, batterySoc: 87, batteryPower: -350,
-        gridPower: 120, solarPower: 640, gasM3: 1234.56, anyOnline: true)
+        gridPower: 120, solarPower: 640, gasM3: 1234.56, anyOnline: true, locale: "en")
+}
+
+/// Localised widget strings (en/fr/nl). English is the fallback.
+enum Loc {
+    static let table: [String: [String: String]] = [
+        "en": ["battery": "Battery", "grid": "Grid", "solar": "Solar", "gas": "Gas",
+               "updated": "Updated", "updated_short": "Upd.",
+               "desc": "Live energy: battery, grid, solar, gas."],
+        "fr": ["battery": "Batterie", "grid": "Réseau", "solar": "Solaire", "gas": "Gaz",
+               "updated": "Mis à jour", "updated_short": "MàJ",
+               "desc": "Énergie en direct : batterie, réseau, solaire, gaz."],
+        "nl": ["battery": "Accu", "grid": "Net", "solar": "Zon", "gas": "Gas",
+               "updated": "Bijgewerkt", "updated_short": "Bijg.",
+               "desc": "Live energie: accu, net, zon, gas."],
+    ]
+    static func t(_ key: String, _ loc: String) -> String {
+        return table[loc]?[key] ?? table["en"]?[key] ?? key
+    }
+    /// System language reduced to en/fr/nl (for the static gallery text).
+    static var system: String {
+        let l = String(Locale.preferredLanguages.first?.prefix(2) ?? "en").lowercased()
+        return table[l] != nil ? l : "en"
+    }
 }
 
 /// Reads + parses latest.json. No third-party deps; tolerant of missing fields.
@@ -55,6 +79,9 @@ enum EnergyLoader {
             let f = ISO8601DateFormatter()
             f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
             snap.updatedAt = f.date(from: ts) ?? ISO8601DateFormatter().date(from: ts)
+        }
+        if let loc = root["locale"] as? String {
+            snap.locale = String(loc.prefix(2)).lowercased()
         }
 
         let devices = (root["devices"] as? [[String: Any]]) ?? []

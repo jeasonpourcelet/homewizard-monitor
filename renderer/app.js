@@ -9,6 +9,24 @@ window.addEventListener('unhandledrejection', (e) =>
 );
 
 const $ = (id) => document.getElementById(id);
+
+// i18n — strings + current locale come from preload (window.hwm).
+function t(key, vars) {
+  const dict = (window.hwm && window.hwm.i18n) || {};
+  let s = dict[key] != null ? dict[key] : key;
+  if (vars) for (const k in vars) s = s.split('{' + k + '}').join(String(vars[k]));
+  return s;
+}
+function applyStatic() {
+  const loc = (window.hwm && window.hwm.locale) || 'en';
+  document.documentElement.lang = loc;
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.innerHTML = t(el.getAttribute('data-i18n'));
+  });
+  const g = $('guide');
+  if (g && window.GUIDES) g.innerHTML = window.GUIDES[loc] || window.GUIDES.en;
+}
+
 let chart = null;
 let lastDevices = [];      // dernier snapshot live
 let selected = [];         // appareils suivis (config en cours d'édition)
@@ -99,8 +117,8 @@ function valHtml(val, unit, cls = '') {
 function renderCard(d) {
   if (!d.online) {
     const msg = d.needsPairing
-      ? `🔗 Appairage requis — onglet <b>Appareils</b> → « Appairer », puis bouton de l'appareil.`
-      : `Hors ligne — ${d.errorMsg || 'injoignable'}`;
+      ? t('pairing_required_card')
+      : `${t('offline')} — ${d.errorMsg || t('unreachable')}`;
     return `<div class="card off">
       <div class="card-top">
         <div class="card-main"><div class="dname"><span class="dot off"></span> ${d.label}</div></div>
@@ -117,14 +135,14 @@ function renderCard(d) {
 }
 
 function powerStateLabel(w) {
-  return w === 0 ? 'au repos' : w > 0 ? 'en charge' : 'en décharge';
+  return w === 0 ? t('state_idle') : w > 0 ? t('state_charging') : t('state_discharging');
 }
 
 function cardEnergy(d) {
   const p = fmtPower(d.powerW);
   const imp = d.powerW > 0;
   const cls = imp ? 'c-import' : d.powerW < 0 ? 'c-export' : '';
-  const label = imp ? 'consommation' : d.powerW < 0 ? 'injection / production' : 'équilibre';
+  const label = imp ? t('label_consumption') : d.powerW < 0 ? t('label_injection') : t('label_balance');
   const color = imp ? COL.import : d.powerW < 0 ? COL.export : COL.neutral;
   const right = d.switchState != null
     ? `<span class="tag ${d.switchState ? 'ok' : 'warn'}">${d.switchState ? '⏻ on' : '○ off'}</span>`
@@ -158,7 +176,7 @@ function cardGas(d) {
         <div class="dname">${d.label}</div></div>
       <div class="card-right"><span class="ic">🔥</span></div>
     </div>
-    <p class="card-msg muted small">Index du compteur gaz (mise à jour ~horaire — pas de mesure instantanée).</p>
+    <p class="card-msg muted small">${t('gas_note')}</p>
   </div>`;
 }
 
@@ -171,7 +189,7 @@ function cardBattery(d) {
   return `<div class="card">
     <div class="card-top">
       <div class="card-main"><div class="value">${valHtml(p.val, p.unit + ' · ' + powerStateLabel(d.powerW), 'c-battery')}</div>
-        <div class="dname">${d.label}${d.cycles != null ? ` <span class="muted">· ${d.cycles} cycles</span>` : ''}</div></div>
+        <div class="dname">${d.label}${d.cycles != null ? ` <span class="muted">· ${d.cycles} ${t('cycles')}</span>` : ''}</div></div>
       <div class="card-right">${right}</div>
     </div>
     <div class="spark">${sparklineSVG(d.spark, COL.battery)}</div>
@@ -180,11 +198,11 @@ function cardBattery(d) {
 
 function cardBatteries(d) {
   const p = fmtPower(Math.abs(d.powerW ?? 0));
-  const modes = { zero: 'Zéro injection', standby: 'Veille', to_full: 'Charge complète', predictive: 'Intelligent' };
+  const modes = { zero: t('mode_zero'), standby: t('mode_standby'), to_full: t('mode_to_full'), predictive: t('mode_predictive') };
   return `<div class="card">
     <div class="card-top">
       <div class="card-main"><div class="value">${valHtml(p.val, p.unit + ' · ' + powerStateLabel(d.powerW), 'c-battery')}</div>
-        <div class="dname">${d.label}${d.batteryCount ? ` <span class="muted">· ${d.batteryCount} module(s)</span>` : ''}</div></div>
+        <div class="dname">${d.label}${d.batteryCount ? ` <span class="muted">· ${d.batteryCount} ${t('modules')}</span>` : ''}</div></div>
       <div class="card-right"><span class="tag ok">${modes[d.mode] || d.mode || '—'}</span></div>
     </div>
     <div class="spark">${sparklineSVG(d.spark, COL.battery)}</div>
@@ -195,7 +213,7 @@ function renderCards(snapshot) {
   lastDevices = snapshot.devices || [];
   const c = $('cards');
   if (!lastDevices.length) {
-    c.innerHTML = `<div class="card"><p class="muted">Aucun appareil suivi. Ouvrez l'onglet <b>Appareils</b> pour en ajouter.</p></div>`;
+    c.innerHTML = `<div class="card"><p class="muted">${t('no_devices_overview')}</p></div>`;
     return;
   }
   c.innerHTML = lastDevices.map(renderCard).join('');
@@ -213,8 +231,9 @@ function renderCards(snapshot) {
 
 function updateHeader(snapshot) {
   if (snapshot.updatedAt) {
-    const t = new Date(snapshot.updatedAt).toLocaleTimeString('fr-FR');
-    $('updated').textContent = 'Mis à jour à ' + t;
+    const loc = (window.hwm && window.hwm.locale) || 'en';
+    const time = new Date(snapshot.updatedAt).toLocaleTimeString(loc);
+    $('updated').textContent = t('updated_at', { t: time });
   }
 }
 
@@ -230,7 +249,7 @@ async function refreshChart() {
     const t = new Date(p.t);
     return String(t.getMinutes()).padStart(2, '0') + ':' + String(t.getSeconds()).padStart(2, '0');
   });
-  const unit = kind === 'battery' ? 'Charge / puissance' : kind === 'water' ? 'Débit (L/min)' : 'Puissance (W)';
+  const unit = kind === 'battery' ? t('chart_battery') : kind === 'water' ? t('chart_water') : t('chart_power');
   const color = kind === 'battery' || kind === 'batteries' ? COL.battery : kind === 'water' ? COL.water : COL.import;
 
   if (!chart) {
@@ -264,7 +283,7 @@ async function refreshChart() {
 function renderSelected() {
   const el = $('selected-list');
   if (!selected.length) {
-    el.innerHTML = `<p class="muted small">Aucun appareil. Découvrez le réseau ou ajoutez une IP.</p>`;
+    el.innerHTML = `<p class="muted small">${t('no_devices_list')}</p>`;
     return;
   }
   el.innerHTML = selected
@@ -273,8 +292,8 @@ function renderSelected() {
       const pairUi = d.needsToken
         ? `<div class="pair">
              ${needPair
-               ? `<button class="secondary pair-btn" data-i="${i}">🔗 Appairer</button>`
-               : `<span class="tag-ok">🔑 token OK</span>`}
+               ? `<button class="secondary pair-btn" data-i="${i}">${t('pair')}</button>`
+               : `<span class="tag-ok">${t('token_ok')}</span>`}
              <span class="muted small" id="pair-status-${i}"></span>
            </div>`
         : '';
@@ -283,7 +302,7 @@ function renderSelected() {
           <span style="font-size:18px">${roleIcon(d.role)}</span>
           <div class="meta"><div class="name">${d.label}</div>
             <div class="sub">${d.ip} · ${d.productType || ''} · ${d.serial || ''}</div></div>
-          <button class="rm" data-i="${i}" title="Retirer">✕</button>
+          <button class="rm" data-i="${i}" title="${t('remove')}">✕</button>
         </div>
         ${pairUi}
       </div>`;
@@ -321,7 +340,7 @@ async function pairFlow(index) {
   const dev = selected[index];
   if (!dev) return;
   const status = document.getElementById('pair-status-' + index);
-  status.textContent = '👉 Pressez le bouton de la batterie maintenant (30 s)…';
+  status.textContent = t('press_button');
   const res = await window.hwm.pairDevice(dev.ip);
   if (res.error) {
     status.textContent = '❌ ' + res.error;
@@ -336,9 +355,9 @@ async function pairFlow(index) {
     dev.role = info.role || dev.role;
     dev.kind = info.kind || dev.kind;
     dev.label = info.label || dev.label;
-    status.textContent = `✅ Appairé : ${info.label} (${info.productType})`;
+    status.textContent = t('paired_as', { label: info.label, type: info.productType });
   } else {
-    status.textContent = '✅ Appairé !';
+    status.textContent = t('paired_ok');
   }
   renderSelected();
 }
@@ -346,23 +365,22 @@ async function pairFlow(index) {
 async function runDiscover() {
   const btn = $('btn-discover');
   btn.disabled = true;
-  $('discover-status').textContent = 'Scan du réseau en cours (jusqu\'à ~30 s)…';
+  $('discover-status').textContent = t('scanning');
   $('discovered').innerHTML = '';
   const found = await window.hwm.discover().finally(() => (btn.disabled = false));
   if (!found.length) {
-    $('discover-status').textContent =
-      "Aucun appareil trouvé. Vérifiez que l'API locale est activée dans l'app HomeWizard et que le PC est sur le même réseau. Vous pouvez aussi ajouter l'IP manuellement.";
+    $('discover-status').textContent = t('none_found');
     return;
   }
-  $('discover-status').textContent = `${found.length} appareil(s) trouvé(s).`;
+  $('discover-status').textContent = t('n_found', { n: found.length });
   $('discovered').innerHTML = found
     .map((d, i) => {
       const ok = !d.error;
       return `<div class="dev">
         <input type="checkbox" data-i="${i}" ${ok ? '' : 'disabled'} />
         <span style="font-size:18px">${roleIcon(d.role)}</span>
-        <div class="meta"><div class="name">${d.label || d.mdnsName || 'Appareil'}</div>
-          <div class="sub">${d.ip} · ${ok ? d.productType : 'erreur: ' + d.error}</div></div>
+        <div class="meta"><div class="name">${d.label || d.mdnsName || t('device')}</div>
+          <div class="sub">${d.ip} · ${ok ? d.productType : t('err') + ': ' + d.error}</div></div>
       </div>`;
     })
     .join('');
@@ -378,14 +396,14 @@ async function runDiscover() {
 async function addManualIp() {
   const ip = $('manual-ip').value.trim();
   if (!ip) return;
-  $('manual-status').textContent = 'Test de ' + ip + '…';
+  $('manual-status').textContent = t('testing', { ip });
   const info = await window.hwm.probeIp(ip);
   if (info.error) {
-    $('manual-status').textContent = 'Échec : ' + info.error;
+    $('manual-status').textContent = t('failed', { err: info.error });
     return;
   }
   addDevice(info);
-  $('manual-status').textContent = 'Ajouté : ' + info.label;
+  $('manual-status').textContent = t('added', { label: info.label });
   $('manual-ip').value = '';
 }
 
@@ -419,7 +437,7 @@ function fmtRawVal(v) {
 function renderRaw() {
   const el = $('raw-content');
   if (!lastDevices.length) {
-    el.innerHTML = `<p class="muted">Aucun appareil suivi.</p>`;
+    el.innerHTML = `<p class="muted">${t('no_devices_short')}</p>`;
     return;
   }
   el.innerHTML = lastDevices
@@ -428,7 +446,7 @@ function renderRaw() {
         <span class="badge">${d.productType || ''} · ${d.ip}</span></div>`;
       if (!d.online || !d.raw) {
         return `<div class="panel">${head}<p class="muted small">${
-          d.needsPairing ? '🔗 Appairage requis pour lire les données.' : 'Hors ligne — ' + (d.errorMsg || 'injoignable')
+          d.needsPairing ? t('pairing_required_raw') : t('offline') + ' — ' + (d.errorMsg || t('unreachable'))
         }</p></div>`;
       }
       const rows = Object.entries(d.raw)
@@ -443,6 +461,15 @@ function renderRaw() {
 // Init
 // --------------------------------------------------------------------------
 async function init() {
+  applyStatic(); // localise static text + inject the guide
+
+  // Language selector.
+  const ls = $('lang-select');
+  if (ls) {
+    ls.value = (window.hwm && window.hwm.locale) || 'en';
+    ls.addEventListener('change', () => window.hwm.setLocale(ls.value));
+  }
+
   const cfg = await window.hwm.getConfig();
   selected = (cfg.devices || []).map((d) => ({ ...d }));
   renderSelected();
@@ -500,7 +527,7 @@ async function activateWidget() {
   const status = $('widget-activate-status');
   btn.disabled = true;
   status.classList.remove('update-ok');
-  status.textContent = 'Activation…';
+  status.textContent = t('widget_activating');
   let r;
   try {
     r = await window.hwm.widgetActivate();
@@ -510,13 +537,11 @@ async function activateWidget() {
   btn.disabled = false;
   if (r.ok) {
     status.classList.add('update-ok');
-    status.textContent =
-      '✅ Widget enregistré. Ajoute-le : clic droit sur le bureau → Modifier les widgets → « Home Wizard ».';
+    status.textContent = t('widget_registered');
   } else if (r.reason === 'not-installed') {
-    status.textContent =
-      "⚠️ Widget pas encore installé : il se construit depuis les sources (dossier widget-mac/, voir le README).";
+    status.textContent = t('widget_not_installed');
   } else {
-    status.textContent = '⚠️ Activation impossible (' + (r.reason || 'erreur') + ').';
+    status.textContent = t('widget_activate_failed', { err: r.reason || t('err') });
   }
 }
 
@@ -527,15 +552,15 @@ async function activateWidget() {
 function trayTypeOptionsFor(serial) {
   const d = lastDevices.find((x) => x.serial === serial) ||
             selected.find((x) => x.serial === serial) || {};
-  const opts = [['off', 'Logo (rien)']];
+  const opts = [['off', t('opt_logo')]];
   if (d.kind === 'battery' || d.kind === 'batteries') {
-    opts.push(['soc', '% batterie'], ['power', 'Puissance']);
+    opts.push(['soc', t('opt_soc')], ['power', t('opt_power')]);
   } else if (d.kind === 'water') {
-    opts.push(['flow', 'Débit eau']);
+    opts.push(['flow', t('opt_flow')]);
   } else if (d.kind === 'gas') {
-    // Gaz : index horaire, pas de valeur instantanée → logo seul.
+    // Gas: hourly index, no instant value → logo only.
   } else {
-    opts.push(['power', 'Puissance']); // P1, kWh, prise, etc.
+    opts.push(['power', t('opt_power')]); // P1, kWh, socket, etc.
   }
   return opts;
 }
@@ -559,7 +584,7 @@ async function populateTraySettings() {
 async function saveTraySettings() {
   const tm = { serial: $('tray-device').value, type: $('tray-type').value };
   await window.hwm.setTrayMetric(tm);
-  $('tray-status').textContent = ' ✅ Indicateur appliqué';
+  $('tray-status').textContent = t('indicator_applied');
   setTimeout(() => ($('tray-status').textContent = ''), 2500);
 }
 
@@ -571,7 +596,7 @@ async function checkForUpdates() {
   const status = $('update-status');
   btn.disabled = true;
   status.classList.remove('update-ok');
-  status.textContent = 'Vérification…';
+  status.textContent = t('checking');
   let r;
   try {
     r = await window.hwm.checkUpdates();
@@ -581,9 +606,7 @@ async function checkForUpdates() {
   btn.disabled = false;
 
   if (r.status === 'update') {
-    status.innerHTML =
-      `🔆 Version ${r.latest} disponible (vous avez ${r.current}). ` +
-      `<a href="#" id="dl-update" class="link">Télécharger</a>`;
+    status.innerHTML = t('update_available', { latest: r.latest, current: r.current });
     const dl = $('dl-update');
     if (dl)
       dl.addEventListener('click', (e) => {
@@ -592,11 +615,11 @@ async function checkForUpdates() {
       });
   } else if (r.status === 'uptodate') {
     status.classList.add('update-ok');
-    status.textContent = `✅ Vous êtes à jour (v${r.current})`;
+    status.textContent = t('up_to_date', { current: r.current });
   } else if (r.status === 'none') {
-    status.textContent = `Aucune version publiée (actuelle : v${r.current})`;
+    status.textContent = t('no_release', { current: r.current });
   } else {
-    status.textContent = '⚠️ Échec de la vérification (réseau ?)';
+    status.textContent = t('update_failed');
   }
 }
 

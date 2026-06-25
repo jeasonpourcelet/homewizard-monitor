@@ -51,6 +51,7 @@ private let brandGradient = LinearGradient(
 struct HWMWidgetView: View {
     @Environment(\.widgetFamily) var family
     let entry: EnergyEntry
+    private var loc: String { entry.snapshot.locale }
 
     // Tapping the widget opens HomeWizard Monitor (the Electron app) via its URL scheme.
     var body: some View {
@@ -84,9 +85,9 @@ struct HWMWidgetView: View {
             Text(Fmt.soc(entry.snapshot.batterySoc))
                 .font(.system(size: 34, weight: .bold, design: .rounded))
                 .foregroundStyle(brandGradient)
-            Text("Batterie · \(Fmt.watts(entry.snapshot.batteryPower))")
+            Text("\(Loc.t("battery", loc)) · \(Fmt.watts(entry.snapshot.batteryPower))")
                 .font(.caption2).foregroundStyle(.secondary)
-            Text("MàJ \(Fmt.time(entry.snapshot.updatedAt))")
+            Text("\(Loc.t("updated_short", loc)) \(Fmt.time(entry.snapshot.updatedAt))")
                 .font(.system(size: 9)).foregroundStyle(.tertiary)
         }
         .padding(12)
@@ -98,15 +99,15 @@ struct HWMWidgetView: View {
         VStack(alignment: .leading, spacing: 10) {
             header
             HStack(spacing: 14) {
-                metric("bolt.batteryblock", "Batterie",
+                metric("bolt.batteryblock", Loc.t("battery", loc),
                        Fmt.soc(entry.snapshot.batterySoc), Fmt.watts(entry.snapshot.batteryPower))
-                metric("powerplug", "Réseau", Fmt.watts(entry.snapshot.gridPower), nil)
+                metric("powerplug", Loc.t("grid", loc), Fmt.watts(entry.snapshot.gridPower), nil)
             }
             HStack(spacing: 14) {
-                metric("sun.max", "Solaire", Fmt.watts(entry.snapshot.solarPower), nil)
-                metric("flame", "Gaz", Fmt.gas(entry.snapshot.gasM3), nil)
+                metric("sun.max", Loc.t("solar", loc), Fmt.watts(entry.snapshot.solarPower), nil)
+                metric("flame", Loc.t("gas", loc), Fmt.gas(entry.snapshot.gasM3), nil)
             }
-            Text("Mis à jour à \(Fmt.time(entry.snapshot.updatedAt))")
+            Text("\(Loc.t("updated", loc)) \(Fmt.time(entry.snapshot.updatedAt))")
                 .font(.system(size: 9)).foregroundStyle(.tertiary)
         }
         .padding(14)
@@ -138,7 +139,7 @@ struct HWMWidget: Widget {
             HWMWidgetView(entry: entry)
         }
         .configurationDisplayName("Home Wizard")
-        .description("Énergie en direct : batterie, réseau, solaire, gaz.")
+        .description(Loc.t("desc", Loc.system))
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

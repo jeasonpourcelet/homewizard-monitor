@@ -5,7 +5,7 @@ devices, on **Windows and macOS**. Glance at your live power from the menu bar (
 click for a full dashboard with real-time values and live charts — **100% local, no cloud account
 required**. Includes a built-in **onboarding guide** so non-technical users can set it up alone.
 
-> The desktop UI is currently in **French**. Contributions to internationalize it are welcome.
+> Available in **English, French and Dutch** — auto-detected and switchable in the app.
 
 ![Dashboard — live overview](assets/screenshots/dashboard.png)
 
@@ -29,6 +29,8 @@ required**. Includes a built-in **onboarding guide** so non-technical users can 
 - **Raw data tab** — every field returned by each device's API, for diagnostics.
 - **Configurable menu-bar indicator** — render a chosen value (e.g. battery %) on the icon; the
   available metrics are filtered per device type.
+- **Multilingual** — English, French and Dutch (auto-detected from the system, switchable in the app);
+  the widgets follow the chosen language too.
 - **Built-in update check** — compares your version to the latest GitHub release and offers the download.
 - **Auto-discovery** (mDNS + LAN subnet scan) **or** manual IP entry; **DHCP self-healing** by serial.
 - **Start at login** (tray menu toggle), packaged installers (`.dmg` / `.exe`).

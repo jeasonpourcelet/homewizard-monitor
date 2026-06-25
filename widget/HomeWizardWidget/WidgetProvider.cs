@@ -108,13 +108,31 @@ public sealed class WidgetProvider : IWidgetProvider
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             "AppData", "Roaming", "homewizard-monitor", "latest.json");
 
+    // ---- Localisation (en / fr / nl) ----
+    private static readonly Dictionary<string, Dictionary<string, string>> L = new()
+    {
+        ["en"] = new() { ["battery"] = "Battery", ["grid"] = "Grid", ["solar"] = "Solar", ["gas"] = "Gas", ["updated"] = "Updated", ["refresh"] = "Refresh", ["unavailable"] = "data unavailable" },
+        ["fr"] = new() { ["battery"] = "Batterie", ["grid"] = "Réseau", ["solar"] = "Solaire", ["gas"] = "Gaz", ["updated"] = "Maj", ["refresh"] = "Rafraîchir", ["unavailable"] = "données indisponibles" },
+        ["nl"] = new() { ["battery"] = "Accu", ["grid"] = "Net", ["solar"] = "Zon", ["gas"] = "Gas", ["updated"] = "Bijgewerkt", ["refresh"] = "Vernieuwen", ["unavailable"] = "gegevens niet beschikbaar" },
+    };
+    private static string T(string key, string loc) =>
+        (L.TryGetValue(loc, out var d) && d.TryGetValue(key, out var v)) ? v : L["en"][key];
+    private static string SysLocale()
+    {
+        var l = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+        return (l == "fr" || l == "nl") ? l : "en";
+    }
+
     private static string BuildData()
     {
         string battery = "—", grid = "—", solar = "—", gas = "—", updated = "";
+        string locale = SysLocale();
         try
         {
             var json = File.ReadAllText(LatestJsonPath);
             var root = JsonNode.Parse(json)!.AsObject();
+            var jl = root["locale"]?.GetValue<string>();
+            if (!string.IsNullOrEmpty(jl)) locale = jl!.Length >= 2 ? jl.Substring(0, 2).ToLowerInvariant() : jl;
             updated = FormatTime(root["updatedAt"]?.GetValue<string>());
             foreach (var d in root["devices"]!.AsArray())
             {
@@ -143,7 +161,7 @@ public sealed class WidgetProvider : IWidgetProvider
         }
         catch
         {
-            updated = "données indisponibles";
+            updated = T("unavailable", locale);
         }
 
         var data = new JsonObject
@@ -153,6 +171,12 @@ public sealed class WidgetProvider : IWidgetProvider
             ["solar"] = solar,
             ["gas"] = gas,
             ["updated"] = updated,
+            ["l_battery"] = T("battery", locale),
+            ["l_grid"] = T("grid", locale),
+            ["l_solar"] = T("solar", locale),
+            ["l_gas"] = T("gas", locale),
+            ["l_updated"] = T("updated", locale),
+            ["l_refresh"] = T("refresh", locale),
         };
         return data.ToJsonString();
     }
@@ -179,14 +203,14 @@ public sealed class WidgetProvider : IWidgetProvider
       "body": [
         { "type": "TextBlock", "text": "⚡ HomeWizard", "weight": "bolder", "size": "medium", "spacing": "none" },
         { "type": "FactSet", "spacing": "small", "facts": [
-          { "title": "Batterie", "value": "${battery}" },
-          { "title": "Grille", "value": "${grid}" },
-          { "title": "Solaire", "value": "${solar}", "$when": "${$host.widgetSize != \"small\"}" },
-          { "title": "Gaz", "value": "${gas}", "$when": "${$host.widgetSize != \"small\"}" }
+          { "title": "${l_battery}", "value": "${battery}" },
+          { "title": "${l_grid}", "value": "${grid}" },
+          { "title": "${l_solar}", "value": "${solar}", "$when": "${$host.widgetSize != \"small\"}" },
+          { "title": "${l_gas}", "value": "${gas}", "$when": "${$host.widgetSize != \"small\"}" }
         ]},
-        { "type": "TextBlock", "text": "Maj ${updated}", "isSubtle": true, "size": "small", "spacing": "small", "wrap": true }
+        { "type": "TextBlock", "text": "${l_updated} ${updated}", "isSubtle": true, "size": "small", "spacing": "small", "wrap": true }
       ],
-      "actions": [ { "type": "Action.Execute", "title": "Rafraîchir", "verb": "refresh" } ]
+      "actions": [ { "type": "Action.Execute", "title": "${l_refresh}", "verb": "refresh" } ]
     }
     """;
 }
